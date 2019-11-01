@@ -2,14 +2,14 @@ import random
 from dataclasses import dataclass
 from typing import List, Tuple
 
-M_SIZE = 6
-MAX_ROOM_SIZE = 12
+M_SIZE = 4
+MAX_ROOM_SIZE = 8
 
 MPath = Tuple[int, int]
 Matrix = List[MPath]
 Size = Tuple[int, int]
 Position = Tuple[int, int]
-Room = Size
+Room = Size, Position
 Board = List[int]
 
 
@@ -79,16 +79,16 @@ def random_room(matrix: Matrix, room_index: int) -> Room:
     threshold = 4
     min_size = 3 if n_neigh > 1 else threshold
 
-    max_size = MAX_ROOM_SIZE
+    max_size = MAX_ROOM_SIZE - 0
     w, h = (
         random.randint(min_size, max_size),
         random.randint(min_size, max_size),
     )
 
     if w < threshold or h < threshold:
-        return 1, 1
+        return (1, 1), (0, 0)
 
-    return w, h
+    return (w, h), (0, 0)
 
 
 def create_matrix() -> Matrix:
@@ -97,7 +97,7 @@ def create_matrix() -> Matrix:
 
 
 def carve_room(board: Board, room: Room, pos: Position) -> Board:
-    w, h = room
+    (w, h), offset = room
     x, y = pos
     for i in range(h):
         for j in range(w):
@@ -109,29 +109,55 @@ def carve_room(board: Board, room: Room, pos: Position) -> Board:
 
 def carve_path(board: Board, level: Level, path: MPath) -> Board:
     a, b = path
-    r1, r2 = level.rooms[a], level.rooms[b]
+    r1, r2 = level.rooms[a][0], level.rooms[b][0]
     p1, p2 = list(room_anchor(a)), list(room_anchor(b))
-    coord = 0 if p1[0] == p2[0] else 1
-    max_off = min(r1[coord], r2[coord])
+    other = 0 if p1[0] == p2[0] else 1
+    max_off = min(r1[other], r2[other])
     off = random.randrange(max_off)
-    p1[coord] += off
-    p2[coord] += off
+
+    p1[other] += off
+    p2[other] += off
 
     coord = 1 if p1[0] == p2[0] else 0
     step = 1 if p1[coord] < p2[coord] else -1
-    p = list(p1)
+    p = p1
 
-    first = True
+    if step > 0:
+        p[coord] += r1[coord]
+        p2[coord] -= 1
+    else:
+        p[coord] -= 1
+        p2[coord] += r2[coord]
+
+    cpt = 0
+    last_i = None
     while p[coord] != p2[coord]:
         x, y = p
         i = y * M_SIZE * MAX_ROOM_SIZE + x
-        val = 2 if board[i] == 1 and first else 0
+
+        if board[i] == 0:
+            return board
+
+        val = 2 if last_i is None else 0
+
         if r1 == (1, 1):
             val = 0
-        if first and board[i] == 1:
+
+        if board[i] == 1:
             first = False
+
         board[i] = val
         p[coord] += step
+        cpt += 1
+        last_i = i
+
+    x, y = p2
+    i = y * M_SIZE * MAX_ROOM_SIZE + x
+    val = 0 if r2 == (1, 1) else 3
+    if last_i is not None and cpt < 2:
+        board[last_i] = 0
+
+    board[i] = val
 
     return board
 

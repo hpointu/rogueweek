@@ -14,7 +14,7 @@ from dungeon_gen import (
 )
 
 
-CELL_SIZE = 1
+CELL_SIZE = 3
 
 State = Dict[Any, Any]
 
@@ -30,6 +30,7 @@ def draw(state: Any):
         0: 7,
         1: 0,
         2: 8,
+        3: 3,
     }
 
     for i, v in enumerate(state):
