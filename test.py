@@ -14,7 +14,7 @@ from dungeon_gen import (
 )
 
 
-CELL_SIZE = 4
+CELL_SIZE = 1
 
 State = Dict[Any, Any]
 
@@ -23,22 +23,14 @@ def update(state: State):
     pass
 
 
-def draw_matrix(matrix: Matrix):
-
-    # draw cells
-    for i in range(M_SIZE):
-        for j in range(M_SIZE):
-            pyxel.rect(j * 16, i * 16, 8, 8, 7)
-
-    # draw paths
-    for a, b in matrix:
-        l1, c1 = int(a / M_SIZE), int(a % M_SIZE)
-        l2, c2 = int(b / M_SIZE), int(b % M_SIZE)
-        pyxel.line(c1 * 16 + 4, l1 * 16 + 4, c2 * 16 + 4, l2 * 16 + 4, 7)
-
-
 def draw(state: Any):
     pyxel.cls(0)
+
+    colors = {
+        0: 7,
+        1: 0,
+        2: 8,
+    }
 
     for i, v in enumerate(state):
         col = i % (M_SIZE * MAX_ROOM_SIZE)
@@ -48,7 +40,7 @@ def draw(state: Any):
             lin * CELL_SIZE,
             CELL_SIZE,
             CELL_SIZE,
-            7 if v else 1,
+            colors[v],
         )
 
     # draw_matrix(state.matrix)
