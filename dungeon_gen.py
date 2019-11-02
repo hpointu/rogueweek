@@ -13,6 +13,28 @@ Room = Tuple[Size, Position]
 Board = List[int]
 
 
+# 1TRBL
+WALLS = {
+    1: (8, 8),
+    10000: (24, 16),
+    10001: (40, 0),
+    10010: (24, 8),
+    10011: (16, 0),
+    10100: (24, 0),
+    10101: (32, 0),
+    10110: (0, 0),
+    10111: (8, 0),
+    11000: (40, 8),
+    11001: (16, 16),
+    11010: (32, 8),
+    11011: (16, 8),
+    11100: (0, 16),
+    11101: (8, 16),
+    11110: (0, 8),
+    11111: (8, 8),
+}
+
+
 @dataclass
 class Level:
     matrix: Matrix
@@ -143,9 +165,6 @@ def carve_path(board: Board, level: Level, path: MPath) -> Board:
         if r1 == (1, 1):
             val = 0
 
-        if board[i] == 1:
-            first = False
-
         board[i] = val
         p[coord] += step
         cpt += 1
@@ -169,7 +188,6 @@ def room_anchor(index: int) -> Position:
     return x, y
 
 
-
 def board_neigh(index):
     side = M_SIZE * MAX_ROOM_SIZE
     x = index % side
@@ -177,18 +195,53 @@ def board_neigh(index):
 
     return [
         y_ * side + x_
-        for x_, y_ in [(x - 1, y), (x, y - 1), (x + 1, y), (x, y + 1),]
+        for x_, y_ in [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)]
         if 0 <= x_ < side and 0 <= y_ < side
     ]
+
+
+def encode_wall(board: Board, index: int) -> int:
+    val = 0b10000
+
+    side = M_SIZE * MAX_ROOM_SIZE
+    x = index % side
+    y = int(index / side)
+    neighs = [(x - 1, y), (x, y + 1), (x + 1, y), (x, y - 1)]
+
+    def _to_i(x, y):
+        return y_ * side + x_
+
+    def _outside(x, y):
+        return x < 0 or y < 0 or x >= side or y >= side
+
+    for i, (x_, y_) in enumerate(neighs):
+        if _outside(x_, y_) or is_wall(board[_to_i(x_, y_)]):
+            val = val | (1 << i)
+
+    return int("{0:b}".format(val))
+
+
+def is_wall(val: int) -> bool:
+    return val in WALLS
+
+
+def is_door(val: int) -> bool:
+    return val == 2
+
+
+def is_empty(val: int) -> bool:
+    return val == 0
 
 
 def clean_board(board: Board) -> Board:
 
     for i, val in enumerate(board):
-        if val == 2:  # door
-            n_neigh = sum(1 for k in board_neigh(i) if board[k] == 0)
+        if is_door(val):
+            n_neigh = sum(1 for k in board_neigh(i) if is_empty(board[k]))
             if n_neigh > 2:
                 board[i] = 0  # remove door
+        elif val == 1:
+            board[i] = encode_wall(board, i)
 
     return board
 
@@ -203,9 +256,7 @@ def create_map(level: Level):
     for path in level.matrix:
         board = carve_path(board, level, path)
 
-    board = clean_board(board)
-
-    return board
+    return clean_board(board)
 
 
 def generate_level(matrix: Matrix) -> Level:

@@ -14,10 +14,12 @@ from dungeon_gen import (
     Level,
     generate_level,
     create_map,
+    WALLS,
+    is_wall,
 )
 
 
-CELL_SIZE = 16
+CELL_SIZE = 8
 
 
 @dataclass
@@ -47,10 +49,9 @@ def update(state: State) -> State:
 def draw(state: Any):
     pyxel.cls(0)
 
-    colors = {
-        0: 1,
-        1: 0,
-        2: 2,
+    non_walls = {
+        0: (32, 16),
+        2: (48, 0),
     }
 
     for i, v in enumerate(state.board):
@@ -58,7 +59,9 @@ def draw(state: Any):
         lin = int(i / (M_SIZE * MAX_ROOM_SIZE))
         x = col * CELL_SIZE - state.camera[0]
         y = lin * CELL_SIZE - state.camera[1]
-        pyxel.blt(x, y, 0, colors[v] * 16, 0, 16, 16)
+        colors = WALLS if is_wall(v) else non_walls
+        u_, v_ = colors[v]
+        pyxel.blt(x, y, 0, u_, v_, CELL_SIZE, CELL_SIZE)
 
     # draw_matrix(state.matrix)
 
@@ -74,7 +77,7 @@ def main():
 
     state = State(board=m, camera=(0, 0))
     pyxel.init(128, 128)
-    pyxel.load('my_resource.pyxres')
+    pyxel.load("my_resource.pyxres")
     pyxel.run(partial(update, state), partial(draw, state))
 
 
