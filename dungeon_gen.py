@@ -9,14 +9,14 @@ MPath = Tuple[int, int]
 Matrix = List[MPath]
 Size = Tuple[int, int]
 Position = Tuple[int, int]
-Room = Size, Position
+Room = Tuple[Size, Position]
 Board = List[int]
 
 
 @dataclass
 class Level:
     matrix: Matrix
-    rooms: List[Size]
+    rooms: List[Room]
 
 
 def matrix_neighbours(index: int) -> List[int]:
@@ -169,22 +169,24 @@ def room_anchor(index: int) -> Position:
     return x, y
 
 
-def clean_board(board: Board) -> Board:
+
+def board_neigh(index):
     side = M_SIZE * MAX_ROOM_SIZE
+    x = index % side
+    y = int(index / side)
 
-    def _neigh(index):
-        x = index % side
-        y = int(index / side)
+    return [
+        y_ * side + x_
+        for x_, y_ in [(x - 1, y), (x, y - 1), (x + 1, y), (x, y + 1),]
+        if 0 <= x_ < side and 0 <= y_ < side
+    ]
 
-        return [
-            y_ * side + x_
-            for x_, y_ in [(x - 1, y), (x, y - 1), (x + 1, y), (x, y + 1),]
-            if 0 <= x_ < side and 0 <= y_ < side
-        ]
+
+def clean_board(board: Board) -> Board:
 
     for i, val in enumerate(board):
         if val == 2:  # door
-            n_neigh = sum(1 for k in _neigh(i) if board[k] == 0)
+            n_neigh = sum(1 for k in board_neigh(i) if board[k] == 0)
             if n_neigh > 2:
                 board[i] = 0  # remove door
 
