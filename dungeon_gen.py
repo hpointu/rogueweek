@@ -153,7 +153,7 @@ def carve_path(board: Board, level: Level, path: MPath) -> Board:
 
     x, y = p2
     i = y * M_SIZE * MAX_ROOM_SIZE + x
-    val = 0 if r2 == (1, 1) else 3
+    val = 0 if r2 == (1, 1) else 2
     if last_i is not None and cpt < 2:
         board[last_i] = 0
 
@@ -169,6 +169,28 @@ def room_anchor(index: int) -> Position:
     return x, y
 
 
+def clean_board(board: Board) -> Board:
+    side = M_SIZE * MAX_ROOM_SIZE
+
+    def _neigh(index):
+        x = index % side
+        y = int(index / side)
+
+        return [
+            y_ * side + x_
+            for x_, y_ in [(x - 1, y), (x, y - 1), (x + 1, y), (x, y + 1),]
+            if 0 <= x_ < side and 0 <= y_ < side
+        ]
+
+    for i, val in enumerate(board):
+        if val == 2:  # door
+            n_neigh = sum(1 for k in _neigh(i) if board[k] == 0)
+            if n_neigh > 2:
+                board[i] = 0  # remove door
+
+    return board
+
+
 def create_map(level: Level):
     # fully walls (+ border)
     side = M_SIZE * MAX_ROOM_SIZE
@@ -178,6 +200,8 @@ def create_map(level: Level):
 
     for path in level.matrix:
         board = carve_path(board, level, path)
+
+    board = clean_board(board)
 
     return board
 
