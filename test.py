@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import pyxel
 
-from core import index_to_pos, dist
+from core import index_to_pos, dist, normalize, cast_ray
 
 from dungeon_gen import (
     SIDE,
@@ -14,22 +14,27 @@ from dungeon_gen import (
     Position,
     Level,
     generate_level,
-    create_map,
+    create_board,
     WALLS,
+    is_door,
     is_wall,
 )
 
 
 CELL_SIZE = 8
 
+# Debug Ray
+RAY = normalize((2.5, 1.2))
+
 
 @dataclass
 class State:
-    max_range = 5
+    max_range = 3
     player: Tuple[float, float]
     board: Board
     in_range = List[int]
     camera: Tuple[float, float]
+    visible = List[int]
 
 
 def update(state: State) -> State:
@@ -72,6 +77,32 @@ def update(state: State) -> State:
     cy = py - rthreshold if py - cy > rthreshold else cy
     state.camera = cx, cy
 
+    # cast some rays
+    def ray_dir(i):
+        px, py = state.player
+        c, l = index_to_pos(i, SIDE)
+        x, y = c * CELL_SIZE + CELL_SIZE / 2, l * CELL_SIZE + CELL_SIZE / 2
+        return x - px, y - py
+
+    def hit_wall(x, y):
+        px, py = state.player
+        return (
+            state.board.outside(x, y)
+            or is_wall(state.board.get(x, y))
+            or dist((px / CELL_SIZE, py / CELL_SIZE), (x, y)) > state.max_range
+            or is_door(state.board.get(x, y))
+        )
+
+    rays = [ray_dir(i) for i in state.in_range]
+    px, py = state.player
+    start = px / CELL_SIZE, py / CELL_SIZE
+    state.visible = []
+    for r in rays:
+        trav, hit, _ = cast_ray(start, r, hit_wall)
+        state.visible += trav
+        if not state.board.outside(*hit):
+            state.visible.append(hit)
+
     return state
 
 
@@ -90,37 +121,53 @@ def draw(state: State):
 
     cx, cy = state.camera
 
-    # for i, v in enumerate(state.board):
-    #     col, lin = index_to_pos(i, SIDE)
-    #     x = col * CELL_SIZE - cx
-    #     y = lin * CELL_SIZE - cy
-    #     colors = WALLS if is_wall(v) else non_walls
-    #     u_, v_ = colors[v]
-    #     pyxel.blt(x, y, 0, u_, v_, CELL_SIZE, CELL_SIZE)
-
     # draw in range
-    for i in state.in_range:
-        col, lin = index_to_pos(i, SIDE)
-        v = state.board[i]
-        x = col * CELL_SIZE - cx
-        y = lin * CELL_SIZE - cy
+    for x, y in state.visible:
+        if state.board.outside(x, y):
+            continue
+        v = state.board.get(x, y)
+        x = x * CELL_SIZE - cx
+        y = y * CELL_SIZE - cy
         colors = WALLS if is_wall(v) else non_walls
         u_, v_ = colors[v]
         pyxel.blt(x, y, 0, u_, v_, CELL_SIZE, CELL_SIZE)
-        # pyxel.blt(x, y, 0, *(YES + (CELL_SIZE, CELL_SIZE)), 5)
 
-    x, y = map(int, state.player)
+    x, y = int(state.player[0] - cx), int(state.player[1] - cy)
     u, v = player_sprite
-    pyxel.blt(x - cx, y - cy, 0, u, v, CELL_SIZE, CELL_SIZE, 5)
+    pyxel.blt(
+        x - CELL_SIZE / 2, y - CELL_SIZE / 2, 0, u, v, CELL_SIZE, CELL_SIZE, 5
+    )
+
+
+def update_debug(state: State):
+    pass
+
+
+def draw_debug(state: State):
+    pyxel.cls(0)
+    U = 3
+    for i in range(len(state.board)):
+        x, y = index_to_pos(i, state.board.side)
+        v = state.board[i]
+        if is_wall(v):
+            col = 0
+        elif is_door(v):
+            col = 8
+        else:
+            col = 7
+        pyxel.rect(x * U, y * U, U, U, col)
 
 
 def main():
     level = generate_level(create_matrix())
-    m = create_map(level)
+    m = create_board(level)
+    print(m.cells)
+    print(level.matrix)
 
     state = State(board=m, camera=(0, 0), player=(0, 0))
     pyxel.init(128, 128)
     pyxel.load("my_resource.pyxres")
+    # pyxel.run(partial(update_debug, state), partial(draw_debug, state))
     pyxel.run(partial(update, state), partial(draw, state))
 
 

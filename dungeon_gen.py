@@ -2,7 +2,7 @@ import random
 from dataclasses import dataclass
 from typing import List, Tuple
 
-from core import index_to_pos
+from core import index_to_pos, Board
 
 M_SIZE = 4
 MAX_ROOM_SIZE = 8
@@ -13,7 +13,6 @@ Matrix = List[MPath]
 Size = Tuple[int, int]
 Position = Tuple[int, int]
 Room = Tuple[Size, Position]
-Board = List[int]
 
 
 # 1TRBL
@@ -45,7 +44,7 @@ class Level:
 
 
 def matrix_neighbours(index: int) -> List[int]:
-    row, col = index_to_pos(index, M_SIZE)
+    col, row = index_to_pos(index, M_SIZE)
 
     return [
         r * M_SIZE + c
@@ -128,7 +127,7 @@ def carve_room(board: Board, room: Room, pos: Position) -> Board:
         for j in range(w):
             _x = j + x
             _y = i + y
-            board[_y * M_SIZE * MAX_ROOM_SIZE + _x] = 0
+            board.set(_x, _y, 0)
     return board
 
 
@@ -158,9 +157,8 @@ def carve_path(board: Board, level: Level, path: MPath) -> Board:
     last_i = None
     while p[coord] != p2[coord]:
         x, y = p
-        i = y * M_SIZE * MAX_ROOM_SIZE + x
 
-        if board[i] == 0:
+        if board.get(x, y) == 0:
             return board
 
         val = 2 if last_i is None else 0
@@ -168,18 +166,17 @@ def carve_path(board: Board, level: Level, path: MPath) -> Board:
         if r1 == (1, 1):
             val = 0
 
-        board[i] = val
+        board.set(x, y, val)
         p[coord] += step
         cpt += 1
-        last_i = i
+        last_i = x, y
 
     x, y = p2
-    i = y * M_SIZE * MAX_ROOM_SIZE + x
     val = 0 if r2 == (1, 1) else 2
     if last_i is not None and cpt < 2:
-        board[last_i] = 0
+        board.set(*last_i, 0)
 
-    board[i] = val
+    board.set(x, y, val)
 
     return board
 
@@ -209,11 +206,8 @@ def encode_wall(board: Board, index: int) -> int:
     def _to_i(x, y):
         return y_ * SIDE + x_
 
-    def _outside(x, y):
-        return x < 0 or y < 0 or x >= SIDE or y >= SIDE
-
     for i, (x_, y_) in enumerate(neighs):
-        if _outside(x_, y_) or is_wall(board[_to_i(x_, y_)]):
+        if board.outside(x_, y_) or is_wall(board.get(x_, y_)):
             val = val | (1 << i)
 
     return int("{0:b}".format(val))
@@ -233,7 +227,8 @@ def is_empty(val: int) -> bool:
 
 def clean_board(board: Board) -> Board:
 
-    for i, val in enumerate(board):
+    for i in range(len(board)):
+        val = board[i]
         if is_door(val):
             n_neigh = sum(1 for k in board_neigh(i) if is_empty(board[k]))
             if n_neigh > 2:
@@ -244,9 +239,12 @@ def clean_board(board: Board) -> Board:
     return board
 
 
-def create_map(level: Level):
+def create_board(level: Level):
     # fully walls (+ border)
-    board = (SIDE * SIDE) * [1]
+    board = Board(
+        cells=(SIDE * SIDE) * [1],
+        side=SIDE,
+    )
     for i, room in enumerate(level.rooms):
         board = carve_room(board, room, room_anchor(i))
 
