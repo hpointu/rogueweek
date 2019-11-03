@@ -2,8 +2,11 @@ import random
 from dataclasses import dataclass
 from typing import List, Tuple
 
+from core import index_to_pos
+
 M_SIZE = 4
 MAX_ROOM_SIZE = 8
+SIDE = M_SIZE * MAX_ROOM_SIZE
 
 MPath = Tuple[int, int]
 Matrix = List[MPath]
@@ -42,7 +45,7 @@ class Level:
 
 
 def matrix_neighbours(index: int) -> List[int]:
-    row, col = int(index / M_SIZE), int(index % M_SIZE)
+    row, col = index_to_pos(index, M_SIZE)
 
     return [
         r * M_SIZE + c
@@ -182,37 +185,32 @@ def carve_path(board: Board, level: Level, path: MPath) -> Board:
 
 
 def room_anchor(index: int) -> Position:
-    side = M_SIZE * MAX_ROOM_SIZE
-    x = (index * MAX_ROOM_SIZE) % side
-    y = int((index * MAX_ROOM_SIZE) / side) * MAX_ROOM_SIZE
+    x = (index * MAX_ROOM_SIZE) % SIDE
+    y = int((index * MAX_ROOM_SIZE) / SIDE) * MAX_ROOM_SIZE
     return x, y
 
 
 def board_neigh(index):
-    side = M_SIZE * MAX_ROOM_SIZE
-    x = index % side
-    y = int(index / side)
+    x, y = index_to_pos(index, SIDE)
 
     return [
-        y_ * side + x_
+        y_ * SIDE + x_
         for x_, y_ in [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)]
-        if 0 <= x_ < side and 0 <= y_ < side
+        if 0 <= x_ < SIDE and 0 <= y_ < SIDE
     ]
 
 
 def encode_wall(board: Board, index: int) -> int:
     val = 0b10000
 
-    side = M_SIZE * MAX_ROOM_SIZE
-    x = index % side
-    y = int(index / side)
+    x, y = index_to_pos(index, SIDE)
     neighs = [(x - 1, y), (x, y + 1), (x + 1, y), (x, y - 1)]
 
     def _to_i(x, y):
-        return y_ * side + x_
+        return y_ * SIDE + x_
 
     def _outside(x, y):
-        return x < 0 or y < 0 or x >= side or y >= side
+        return x < 0 or y < 0 or x >= SIDE or y >= SIDE
 
     for i, (x_, y_) in enumerate(neighs):
         if _outside(x_, y_) or is_wall(board[_to_i(x_, y_)]):
@@ -248,8 +246,7 @@ def clean_board(board: Board) -> Board:
 
 def create_map(level: Level):
     # fully walls (+ border)
-    side = M_SIZE * MAX_ROOM_SIZE
-    board = (side * side) * [1]
+    board = (SIDE * SIDE) * [1]
     for i, room in enumerate(level.rooms):
         board = carve_room(board, room, room_anchor(i))
 
