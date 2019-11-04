@@ -200,7 +200,7 @@ def board_neigh(index):
 def encode_wall(board: Board, index: int) -> int:
     val = 0b10000
 
-    x, y = index_to_pos(index, SIDE)
+    x, y = index_to_pos(index, board.side)
     neighs = [(x - 1, y), (x, y + 1), (x + 1, y), (x, y - 1)]
 
     def _to_i(x, y):
@@ -211,6 +211,15 @@ def encode_wall(board: Board, index: int) -> int:
             val = val | (1 << i)
 
     return int("{0:b}".format(val))
+
+
+def encode_floor(board: Board, index: int) -> int:
+    x, y = index_to_pos(index, board.side)
+    top = x, y - 1
+    if board.outside(*top) or is_wall(board.get(*top)):
+        return 3
+    return 0
+
 
 
 def is_wall(val: int) -> bool:
@@ -235,6 +244,8 @@ def clean_board(board: Board) -> Board:
                 board[i] = 0  # remove door
         elif val == 1:
             board[i] = encode_wall(board, i)
+        elif val == 0:
+            board[i]  = encode_floor(board, i)
 
     return board
 

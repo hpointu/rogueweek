@@ -118,6 +118,7 @@ def draw(state: State):
     player_sprite = (0, 24)
     non_walls = {
         0: (32, 16),
+        3: (40, 16),
         2: (48, 0),
     }
 
