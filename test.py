@@ -23,18 +23,21 @@ from dungeon_gen import (
 
 CELL_SIZE = 8
 
-# Debug Ray
-RAY = normalize((2.5, 1.2))
-
 
 @dataclass
 class State:
     max_range = 3
     player: Tuple[float, float]
+    orientation = 1
     board: Board
     in_range = List[int]
     camera: Tuple[float, float]
     visible = List[int]
+
+    def to_cam_space(self, pos: Tuple[float, float]):
+        px, py = pos
+        cx, cy = self.camera
+        return px - cx, py - cy
 
 
 def update(state: State) -> State:
@@ -42,15 +45,17 @@ def update(state: State) -> State:
     dy: float
 
     dx, dy = 0, 0
-    step = 0.6
+    step = 0.08
 
     if pyxel.btn(pyxel.KEY_DOWN):
         dy += step
     if pyxel.btn(pyxel.KEY_UP):
         dy -= step
     if pyxel.btn(pyxel.KEY_LEFT):
+        state.orientation = -1
         dx -= step
     if pyxel.btn(pyxel.KEY_RIGHT):
+        state.orientation = 1
         dx += step
 
     x, y = state.player
@@ -60,17 +65,17 @@ def update(state: State) -> State:
     cx, cy = state.camera
 
     # store in-range block indices
-    max_range = state.max_range * CELL_SIZE
+    max_range = state.max_range
     state.in_range = []
     for i in range(len(state.board)):
         x, y = index_to_pos(i, SIDE)
-        center = x * CELL_SIZE + CELL_SIZE / 2, y * CELL_SIZE + CELL_SIZE / 2
+        center = x + 0.5, y + 0.5
         if dist(center, state.player) < max_range:
             state.in_range.append(i)
 
     # Move camera if needed
-    lthreshold = 6 * CELL_SIZE
-    rthreshold = 10 * CELL_SIZE
+    lthreshold = 6
+    rthreshold = 10
     cx = px - lthreshold if px - cx < lthreshold else cx
     cx = px - rthreshold if px - cx > rthreshold else cx
     cy = py - lthreshold if py - cy < lthreshold else cy
@@ -81,24 +86,21 @@ def update(state: State) -> State:
     def ray_dir(i):
         px, py = state.player
         c, l = index_to_pos(i, SIDE)
-        x, y = c * CELL_SIZE + CELL_SIZE / 2, l * CELL_SIZE + CELL_SIZE / 2
+        x, y = c + 0.5, l + 0.5
         return x - px, y - py
 
     def hit_wall(x, y):
-        px, py = state.player
         return (
             state.board.outside(x, y)
             or is_wall(state.board.get(x, y))
-            or dist((px / CELL_SIZE, py / CELL_SIZE), (x, y)) > state.max_range
+            or dist(state.player, (x, y)) > state.max_range
             or is_door(state.board.get(x, y))
         )
 
     rays = [ray_dir(i) for i in state.in_range]
-    px, py = state.player
-    start = px / CELL_SIZE, py / CELL_SIZE
     state.visible = []
     for r in rays:
-        trav, hit, _ = cast_ray(start, r, hit_wall)
+        trav, hit, _ = cast_ray(state.player, r, hit_wall)
         state.visible += trav
         if not state.board.outside(*hit):
             state.visible.append(hit)
@@ -126,16 +128,22 @@ def draw(state: State):
         if state.board.outside(x, y):
             continue
         v = state.board.get(x, y)
-        x = x * CELL_SIZE - cx
-        y = y * CELL_SIZE - cy
+        x, y = state.to_cam_space((x, y))
         colors = WALLS if is_wall(v) else non_walls
         u_, v_ = colors[v]
-        pyxel.blt(x, y, 0, u_, v_, CELL_SIZE, CELL_SIZE)
+        pyxel.blt(x * CELL_SIZE, y * CELL_SIZE, 0, u_, v_, CELL_SIZE, CELL_SIZE)
 
-    x, y = int(state.player[0] - cx), int(state.player[1] - cy)
+    x, y = state.to_cam_space(state.player)
     u, v = player_sprite
     pyxel.blt(
-        x - CELL_SIZE / 2, y - CELL_SIZE / 2, 0, u, v, CELL_SIZE, CELL_SIZE, 5
+        x * CELL_SIZE - CELL_SIZE / 2,
+        y * CELL_SIZE - CELL_SIZE / 2,
+        0,
+        u,
+        v,
+        CELL_SIZE * state.orientation,
+        CELL_SIZE,
+        5,
     )
 
 
@@ -161,8 +169,6 @@ def draw_debug(state: State):
 def main():
     level = generate_level(create_matrix())
     m = create_board(level)
-    print(m.cells)
-    print(level.matrix)
 
     state = State(board=m, camera=(0, 0), player=(0, 0))
     pyxel.init(128, 128)
