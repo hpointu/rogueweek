@@ -131,17 +131,17 @@ def draw(state: State):
         34: (40, 16),
         35: (48, 8),
         20: (48, 0),
-        21: (56, 0),
+        21: (56, 16),
         22: (56, 8),
-        23: (56, 16),
+        23: (56, 0),
     }
 
     cx, cy = state.camera
 
     # draw in range
-    for x, y in state.visible:
-    # for i in range(len(state.board)):
-        # x, y = index_to_pos(i, state.board.side)
+    #for x, y in state.visible:
+    for i in range(len(state.board)):
+        x, y = index_to_pos(i, state.board.side)
         if state.board.outside(x, y):
             continue
         v = state.board.get(x, y)

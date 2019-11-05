@@ -232,7 +232,7 @@ def encode_floor(board: Board, index: int) -> int:
         elif bin_str[4] == '0' and bin_str[2] == '0':
             return 34
 
-    elif top_val == 2:  # front door
+    elif top_val == 20:  # front door
         return 35
 
     return 30
@@ -253,7 +253,7 @@ def encode_door(board: Board, index: int) -> int:
             return 21
         elif bin_str[4] == '1' and bin_str[2] == '1':
             return 22
-        elif bin_str[4] == '1' and bin_str[2] == '0':
+        elif bin_str[2] == '0':
             return 23
 
     return 20
@@ -275,14 +275,17 @@ def clean_board(board: Board) -> Board:
 
     for i in range(len(board)):
         val = board[i]
-        if is_door(val):
+        if val == 1:
+            board[i] = encode_wall(board, i)
+        elif val == 2:
+            # must happen after walls (top down)
             n_neigh = sum(1 for k in board_neigh(i) if is_empty(board[k]))
             if n_neigh > 2:
                 board[i] = 0  # remove door
-        elif val == 1:
-            board[i] = encode_wall(board, i)
+            else:
+                board[i] = encode_door(board, i)
         elif val == 0:
-            # we can safely assume walls from above have been encoded
+            # Must happen after walls and doors
             board[i]  = encode_floor(board, i)
 
     return board
