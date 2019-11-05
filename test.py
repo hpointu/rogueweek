@@ -26,7 +26,7 @@ CELL_SIZE = 8
 
 @dataclass
 class State:
-    max_range = 3
+    max_range = 5
     player: Tuple[float, float]
     orientation = 1
     board: Board
@@ -70,7 +70,7 @@ def update(state: State) -> State:
     for i in range(len(state.board)):
         x, y = index_to_pos(i, SIDE)
         center = x + 0.5, y + 0.5
-        if dist(center, state.player) < max_range:
+        if dist(center, state.player) < max_range * 2:
             state.in_range.append(i)
 
     # Move camera if needed
@@ -139,9 +139,9 @@ def draw(state: State):
     cx, cy = state.camera
 
     # draw in range
-    #for x, y in state.visible:
-    for i in range(len(state.board)):
-        x, y = index_to_pos(i, state.board.side)
+    for x, y in state.visible:
+    # for i in range(len(state.board)):
+    #     x, y = index_to_pos(i, state.board.side)
         if state.board.outside(x, y):
             continue
         v = state.board.get(x, y)
