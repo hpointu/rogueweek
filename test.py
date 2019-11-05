@@ -82,12 +82,18 @@ def update(state: State) -> State:
     cy = py - rthreshold if py - cy > rthreshold else cy
     state.camera = cx, cy
 
-    # cast some rays
-    def ray_dir(i):
+    def ray_dirs(i):
         px, py = state.player
         c, l = index_to_pos(i, SIDE)
-        x, y = c + 0.5, l + 0.5
-        return x - px, y - py
+        return [
+            (x - px, y - py)
+            for x, y in [
+                (c + 0.5, l),
+                (c + 1, l + 0.5),
+                (c + 0.5, l + 1),
+                (c, l + 0.5),
+            ]
+        ]
 
     def hit_wall(x, y):
         return (
@@ -97,7 +103,7 @@ def update(state: State) -> State:
             or is_door(state.board.get(x, y))
         )
 
-    rays = [ray_dir(i) for i in state.in_range]
+    rays = sum([ray_dirs(i) for i in state.in_range], [])
     state.visible = []
     for r in rays:
         trav, hit, _ = cast_ray(state.player, r, hit_wall)
@@ -118,21 +124,33 @@ def draw(state: State):
     player_sprite = (0, 24)
     non_walls = {
         0: (32, 16),
-        3: (40, 16),
-        2: (48, 0),
+        30: (40, 24),
+        31: (0, 24),
+        32: (8, 24),
+        33: (16, 24),
+        34: (40, 16),
+        35: (48, 8),
+        20: (48, 0),
+        21: (56, 0),
+        22: (56, 8),
+        23: (56, 16),
     }
 
     cx, cy = state.camera
 
     # draw in range
     for x, y in state.visible:
+    # for i in range(len(state.board)):
+        # x, y = index_to_pos(i, state.board.side)
         if state.board.outside(x, y):
             continue
         v = state.board.get(x, y)
         x, y = state.to_cam_space((x, y))
         colors = WALLS if is_wall(v) else non_walls
         u_, v_ = colors[v]
-        pyxel.blt(x * CELL_SIZE, y * CELL_SIZE, 0, u_, v_, CELL_SIZE, CELL_SIZE)
+        pyxel.blt(
+            x * CELL_SIZE, y * CELL_SIZE, 1, u_, v_, CELL_SIZE, CELL_SIZE
+        )
 
     x, y = state.to_cam_space(state.player)
     u, v = player_sprite

@@ -68,7 +68,7 @@ def cast_ray(
     dir_x, dir_y = direction
     pos_x, pos_y = start
     map_x, map_y = map(int, start)
-    dx, dy = abs(1 / dir_x), abs(1 / dir_y)
+    dx, dy = abs(1 / dir_x) if dir_x else 0, abs(1 / dir_y) if dir_y else 0
 
     if dir_x < 0:
         side_dist_x = (pos_x - map_x) * dx
