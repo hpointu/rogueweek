@@ -6,7 +6,7 @@ import pyxel
 
 from core import index_to_pos, dist, normalize, cast_ray, State, Action
 
-from actions import move_to
+from actions import move_to, open_door, wait
 
 from dungeon_gen import (
     SIDE,
@@ -30,15 +30,16 @@ FPS = 30
 
 
 def get_actions(state: State, x, y) -> List[Action]:
-    val = state.board.get(int(x), int(y))
+    val = state.board.get(x, y)
 
     if state.actions:
         return state.actions
 
     if is_empty(val):
         n = int(FPS * 0.5)
-        actions = [move_to(t) for t in tween.tween(state.player, (x, y), n)]
-        return actions
+        return [move_to(t) for t in tween.tween(state.player, (x, y), n)]
+    elif is_door(val):
+        return [open_door((x, y))] + [wait] * int(FPS * 0.5 - 1)
 
     return None
 

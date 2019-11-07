@@ -15,10 +15,10 @@ class Board:
     side: int
 
     def set(self, x, y, val):
-        self.cells[y * self.side + x] = val
+        self.cells[int(y) * self.side + int(x)] = val
 
     def get(self, x, y):
-        return self.cells[y * self.side + x]
+        return self.cells[int(y) * self.side + int(x)]
 
     def __getitem__(self, k):
         return self.cells[k]
@@ -58,7 +58,7 @@ def index_to_pos(index: int, width: int) -> GridCoord:
 
 
 def pos_to_index(x: int, y: int, width: int) -> int:
-    return width * y + x
+    return width * int(y) + int(x)
 
 
 def dist(p1, p2):
