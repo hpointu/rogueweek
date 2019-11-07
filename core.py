@@ -79,7 +79,6 @@ class Player:
                 self.end_turn()
 
 
-
 @dataclass
 class AnimSprite:
     count: int

@@ -16,10 +16,9 @@ from core import (
     pos_to_index,
 )
 
-from actions import open_door, wait, end_turn, combine
+from actions import open_door, end_turn
 
 from dungeon_gen import (
-    SIDE,
     create_matrix,
     Board,
     Matrix,
@@ -98,7 +97,7 @@ def update(state: State) -> State:
     max_range = state.max_range
     state.in_range = set()
     for i in range(len(state.board)):
-        x, y = index_to_pos(i, SIDE)
+        x, y = index_to_pos(i, state.board.side)
         center = x + 0.5, y + 0.5
         if dist(center, state.player.pos) < max_range * 2:
             state.in_range.add(i)
@@ -114,7 +113,7 @@ def update(state: State) -> State:
 
     def ray_dirs(i):
         px, py = state.player.pos
-        c, l = index_to_pos(i, SIDE)
+        c, l = index_to_pos(i, state.board.side)
         return [
             (x - px, y - py)
             for x, y in [
@@ -258,7 +257,9 @@ def main():
     print(enemies)
 
     spawn = 0, 0
-    state = State(board=m, camera=(0, 0), player=Player(spawn), enemies=enemies)
+    state = State(
+        board=m, camera=(0, 0), player=Player(spawn), enemies=enemies
+    )
     pyxel.init(128, 128)
     pyxel.load("my_resource.pyxres")
     # pyxel.run(partial(update_debug, state), partial(draw_debug, state))
