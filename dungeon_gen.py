@@ -313,9 +313,12 @@ def generate_level(matrix: Matrix) -> Level:
 def populate_enemies(level: Level, board: Board):
     enemies = []
     for i in range(len(board)):
+        if not is_empty(board[i]):
+            continue
+
         r = random.randint(0, 100)
 
-        if r > 97:
+        if r > 98:
             enemies.append(Enemy(pos=index_to_pos(i, board.side)))
 
     return enemies

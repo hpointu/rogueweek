@@ -1,12 +1,19 @@
+import pyxel
 from dataclasses import dataclass
 from enum import IntEnum
 from math import sqrt
 from typing import List, Tuple, Any, Callable
+import tween
 
 GridCoord = Tuple[int, int]
 VecF = Tuple[float, float]
 
 EW, NS = 0, 1
+
+
+WAIT = 0
+MOVE = 1
+DOOR = 2
 
 
 @dataclass
@@ -33,6 +40,59 @@ class Board:
         return x < 0 or y < 0 or x >= self.side or y >= self.side
 
 
+class Player:
+    def __init__(self, pos):
+        self.pos = pos
+        self._action = None
+        self._path = None
+        self._callback = None
+
+    def is_busy(self):
+        return self._callback is not None
+
+    def move(self, x, y, callback):
+        self._action = MOVE
+        n = int(30 * 0.3)
+        self._path = list(tween.tween(self.pos, (x, y), n))
+        self._callback = callback
+
+    def wait(self, nframes, callback):
+        self._action = WAIT
+        self._callback = callback
+        self._path = nframes
+
+    def end_turn(self):
+        if self._callback:
+            self._callback(self)
+        self._callback = None
+        self._action = None
+
+    def update(self, state):
+        if self._action == MOVE:
+            self.pos = self._path.pop(0)
+            if not self._path:
+                self.end_turn()
+
+        elif self._action == WAIT:
+            self._path -= 1
+            if self._path < 1:
+                self.end_turn()
+
+
+
+@dataclass
+class AnimSprite:
+    count: int
+    uvs: List[Tuple[int, int]]
+    center: Tuple[int, int]
+    rate: int
+
+    @property
+    def uv(self):
+        i = (pyxel.frame_count // self.rate) % self.count
+        return self.uvs[i]
+
+
 @dataclass
 class Enemy:
     pos: Tuple[float, float]
@@ -41,7 +101,7 @@ class Enemy:
 @dataclass
 class State:
     max_range = 5
-    player: Tuple[float, float]
+    player: Player
     board: Board
     enemies: List[Enemy]
     in_range = List[int]
