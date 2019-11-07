@@ -30,13 +30,12 @@ FPS = 30
 
 
 def get_actions(state: State, x, y) -> List[Action]:
-    val = state.board.get(x, y)
-
     if state.actions:
         return state.actions
 
+    val = state.board.get(x, y)
     if is_empty(val):
-        n = int(FPS * 0.4)
+        n = int(FPS * 0.3)
         return [move_to(t) for t in tween.tween(state.player, (x, y), n)] + [end_turn]
     elif is_door(val):
         return [open_door((x, y))] + [wait] * int(FPS * 0.3 - 1) + [end_turn]
@@ -125,7 +124,7 @@ def update(state: State) -> State:
     rays = sum([ray_dirs(i) for i in state.in_range], [])
     state.visible = []
     for r in rays:
-        trav, hit, _ = cast_ray(state.player, r, hit_wall)
+        trav, hit, _ = cast_ray((px + 0.5, py + 0.5), r, hit_wall)
         state.visible += trav
         if not state.board.outside(*hit):
             state.visible.append(hit)
@@ -174,8 +173,8 @@ def draw(state: State):
     x, y = state.to_cam_space(state.player)
     u, v = player_sprite
     pyxel.blt(
-        x * CELL_SIZE - CELL_SIZE / 2,
-        y * CELL_SIZE - CELL_SIZE / 2,
+        x * CELL_SIZE,
+        y * CELL_SIZE,
         0,
         u,
         v,
@@ -208,7 +207,7 @@ def main():
     level = generate_level(create_matrix())
     m = create_board(level)
 
-    state = State(board=m, camera=(0, 0), player=(0.5, 0.5))
+    state = State(board=m, camera=(0, 0), player=(0, 0))
     pyxel.init(128, 128)
     pyxel.load("my_resource.pyxres")
     # pyxel.run(partial(update_debug, state), partial(draw_debug, state))
