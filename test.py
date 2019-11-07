@@ -4,7 +4,9 @@ from dataclasses import dataclass
 
 import pyxel
 
-from core import index_to_pos, dist, normalize, cast_ray
+from core import index_to_pos, dist, normalize, cast_ray, State, Action
+
+from actions import move_to
 
 from dungeon_gen import (
     SIDE,
@@ -17,27 +19,28 @@ from dungeon_gen import (
     create_board,
     WALLS,
     is_door,
+    is_empty,
     is_wall,
 )
+import tween
 
 
 CELL_SIZE = 8
+FPS = 30
 
 
-@dataclass
-class State:
-    max_range = 5
-    player: Tuple[float, float]
-    orientation = 1
-    board: Board
-    in_range = List[int]
-    camera: Tuple[float, float]
-    visible = List[int]
+def get_actions(state: State, x, y) -> List[Action]:
+    val = state.board.get(int(x), int(y))
 
-    def to_cam_space(self, pos: Tuple[float, float]):
-        px, py = pos
-        cx, cy = self.camera
-        return px - cx, py - cy
+    if state.actions:
+        return state.actions
+
+    if is_empty(val):
+        n = int(FPS * 0.5)
+        actions = [move_to(t) for t in tween.tween(state.player, (x, y), n)]
+        return actions
+
+    return None
 
 
 def update(state: State) -> State:
@@ -47,20 +50,23 @@ def update(state: State) -> State:
     dx, dy = 0, 0
     step = 0.08
 
+    x, y = state.player
     if pyxel.btn(pyxel.KEY_DOWN):
-        dy += step
-    if pyxel.btn(pyxel.KEY_UP):
-        dy -= step
-    if pyxel.btn(pyxel.KEY_LEFT):
+        state.actions = get_actions(state, x, y + 1)
+    elif pyxel.btn(pyxel.KEY_UP):
+        state.actions = get_actions(state, x, y - 1)
+    elif pyxel.btn(pyxel.KEY_LEFT):
+        state.actions = get_actions(state, x - 1, y)
         state.orientation = -1
-        dx -= step
-    if pyxel.btn(pyxel.KEY_RIGHT):
+    elif pyxel.btn(pyxel.KEY_RIGHT):
+        state.actions = get_actions(state, x + 1, y)
         state.orientation = 1
-        dx += step
+
+    if state.actions:
+        a = state.actions.pop(0)
+        state = a(state)
 
     x, y = state.player
-    state.player = x + dx, y + dy
-
     px, py = state.player
     cx, cy = state.camera
 
@@ -93,6 +99,7 @@ def update(state: State) -> State:
                 (c + 0.5, l + 1),
                 (c, l + 0.5),
             ]
+            if x - px and y - py
         ]
 
     def hit_wall(x, y):
@@ -140,8 +147,8 @@ def draw(state: State):
 
     # draw in range
     for x, y in state.visible:
-    # for i in range(len(state.board)):
-    #     x, y = index_to_pos(i, state.board.side)
+        # for i in range(len(state.board)):
+        #     x, y = index_to_pos(i, state.board.side)
         if state.board.outside(x, y):
             continue
         v = state.board.get(x, y)
@@ -189,7 +196,7 @@ def main():
     level = generate_level(create_matrix())
     m = create_board(level)
 
-    state = State(board=m, camera=(0, 0), player=(0, 0))
+    state = State(board=m, camera=(0, 0), player=(0.5, 0.5))
     pyxel.init(128, 128)
     pyxel.load("my_resource.pyxres")
     # pyxel.run(partial(update_debug, state), partial(draw_debug, state))

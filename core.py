@@ -1,6 +1,7 @@
 from dataclasses import dataclass
+from enum import IntEnum
 from math import sqrt
-from typing import List, Tuple
+from typing import List, Tuple, Any, Callable
 
 GridCoord = Tuple[int, int]
 VecF = Tuple[float, float]
@@ -30,6 +31,25 @@ class Board:
 
     def outside(self, x, y):
         return x < 0 or y < 0 or x >= self.side or y >= self.side
+
+
+@dataclass
+class State:
+    max_range = 5
+    player: Tuple[float, float]
+    board: Board
+    in_range = List[int]
+    camera: Tuple[float, float]
+    visible = List[int]
+    actions: List[Any] = None
+    orientation = 1
+
+    def to_cam_space(self, pos: Tuple[float, float]):
+        px, py = pos
+        cx, cy = self.camera
+        return px - cx, py - cy
+
+Action = Callable[[State], State]
 
 
 def index_to_pos(index: int, width: int) -> GridCoord:
