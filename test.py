@@ -6,7 +6,7 @@ import pyxel
 
 from core import index_to_pos, dist, normalize, cast_ray, State, Action
 
-from actions import move_to, open_door, wait
+from actions import move_to, open_door, wait, end_turn
 
 from dungeon_gen import (
     SIDE,
@@ -36,12 +36,19 @@ def get_actions(state: State, x, y) -> List[Action]:
         return state.actions
 
     if is_empty(val):
-        n = int(FPS * 0.5)
-        return [move_to(t) for t in tween.tween(state.player, (x, y), n)]
+        n = int(FPS * 0.4)
+        return [move_to(t) for t in tween.tween(state.player, (x, y), n)] + [end_turn]
     elif is_door(val):
-        return [open_door((x, y))] + [wait] * int(FPS * 0.5 - 1)
+        return [open_door((x, y))] + [wait] * int(FPS * 0.3 - 1) + [end_turn]
 
     return None
+
+
+def game_turn(state: State) -> List[Action]:
+    # Game just waits five seconds and gives back player hand
+    if state.actions:
+        return state.actions
+    return [end_turn]
 
 
 def update(state: State) -> State:
@@ -52,16 +59,20 @@ def update(state: State) -> State:
     step = 0.08
 
     x, y = state.player
-    if pyxel.btn(pyxel.KEY_DOWN):
-        state.actions = get_actions(state, x, y + 1)
-    elif pyxel.btn(pyxel.KEY_UP):
-        state.actions = get_actions(state, x, y - 1)
-    elif pyxel.btn(pyxel.KEY_LEFT):
-        state.actions = get_actions(state, x - 1, y)
-        state.orientation = -1
-    elif pyxel.btn(pyxel.KEY_RIGHT):
-        state.actions = get_actions(state, x + 1, y)
-        state.orientation = 1
+
+    if state.player_turn:
+        if pyxel.btn(pyxel.KEY_DOWN):
+            state.actions = get_actions(state, x, y + 1)
+        elif pyxel.btn(pyxel.KEY_UP):
+            state.actions = get_actions(state, x, y - 1)
+        elif pyxel.btn(pyxel.KEY_LEFT):
+            state.actions = get_actions(state, x - 1, y)
+            state.orientation = -1
+        elif pyxel.btn(pyxel.KEY_RIGHT):
+            state.actions = get_actions(state, x + 1, y)
+            state.orientation = 1
+    else:
+        state.actions = game_turn(state)
 
     if state.actions:
         a = state.actions.pop(0)
@@ -73,12 +84,12 @@ def update(state: State) -> State:
 
     # store in-range block indices
     max_range = state.max_range
-    state.in_range = []
+    state.in_range = set()
     for i in range(len(state.board)):
         x, y = index_to_pos(i, SIDE)
         center = x + 0.5, y + 0.5
-        if dist(center, state.player) < max_range * 2:
-            state.in_range.append(i)
+        if dist(center, state.player) < max_range * 1.5:
+            state.in_range.add(i)
 
     # Move camera if needed
     lthreshold = 6

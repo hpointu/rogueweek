@@ -42,7 +42,8 @@ class State:
     camera: Tuple[float, float]
     visible = List[int]
     actions: List[Any] = None
-    orientation = 1
+    orientation: int = 1
+    player_turn: bool = True
 
     def to_cam_space(self, pos: Tuple[float, float]):
         px, py = pos
