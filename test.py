@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import pyxel
 
-from core import index_to_pos, dist, normalize, cast_ray, State, Action
+from core import index_to_pos, dist, normalize, cast_ray, State, Action, pos_to_index
 
 from actions import move_to, open_door, wait, end_turn
 
@@ -16,6 +16,7 @@ from dungeon_gen import (
     Position,
     Level,
     generate_level,
+    populate_enemies,
     create_board,
     WALLS,
     is_door,
@@ -124,12 +125,12 @@ def update(state: State) -> State:
         )
 
     rays = sum([ray_dirs(i) for i in state.in_range], [])
-    state.visible = []
+    state.visible = set()
     for r in rays:
         trav, hit, _ = cast_ray((px + 0.5, py + 0.5), r, hit_wall)
-        state.visible += trav
+        state.visible.update(trav)
         if not state.board.outside(*hit):
-            state.visible.append(hit)
+            state.visible.add(hit)
 
     return state
 
@@ -154,6 +155,7 @@ def draw(state: State):
         21: (56, 16),
         22: (56, 8),
         23: (56, 0),
+        9001: (0, 40),  # rat
     }
 
     cx, cy = state.camera
@@ -185,6 +187,15 @@ def draw(state: State):
         5,
     )
 
+    for enemy in state.enemies:
+        if enemy.pos not in state.visible:
+            continue
+        x, y = state.to_cam_space(enemy.pos)
+        u, v = non_walls[9001]
+        pyxel.blt(
+            x * CELL_SIZE, y * CELL_SIZE, 1, u, v, CELL_SIZE, CELL_SIZE, 1
+        )
+
 
 def update_debug(state: State):
     pass
@@ -208,8 +219,10 @@ def draw_debug(state: State):
 def main():
     level = generate_level(create_matrix())
     m = create_board(level)
+    enemies = populate_enemies(level, m)
+    print(enemies)
 
-    state = State(board=m, camera=(0, 0), player=(0, 0))
+    state = State(board=m, camera=(0, 0), player=(0, 0), enemies=enemies)
     pyxel.init(128, 128)
     pyxel.load("my_resource.pyxres")
     # pyxel.run(partial(update_debug, state), partial(draw_debug, state))

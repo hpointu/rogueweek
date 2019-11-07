@@ -2,7 +2,7 @@ import random
 from dataclasses import dataclass
 from typing import List, Tuple
 
-from core import index_to_pos, Board
+from core import index_to_pos, Board, Enemy
 
 M_SIZE = 4
 MAX_ROOM_SIZE = 8
@@ -308,3 +308,14 @@ def generate_level(matrix: Matrix) -> Level:
         matrix=matrix,
         rooms=[random_room(matrix, i) for i in range(M_SIZE * M_SIZE)],
     )
+
+
+def populate_enemies(level: Level, board: Board):
+    enemies = []
+    for i in range(len(board)):
+        r = random.randint(0, 100)
+
+        if r > 97:
+            enemies.append(Enemy(pos=index_to_pos(i, board.side)))
+
+    return enemies

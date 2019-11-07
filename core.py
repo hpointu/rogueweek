@@ -34,10 +34,16 @@ class Board:
 
 
 @dataclass
+class Enemy:
+    pos: Tuple[float, float]
+
+
+@dataclass
 class State:
     max_range = 5
     player: Tuple[float, float]
     board: Board
+    enemies: List[Enemy]
     in_range = List[int]
     camera: Tuple[float, float]
     visible = List[int]
