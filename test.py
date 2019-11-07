@@ -36,7 +36,9 @@ def get_actions(state: State, x, y) -> List[Action]:
     val = state.board.get(x, y)
     if is_empty(val):
         n = int(FPS * 0.3)
-        return [move_to(t) for t in tween.tween(state.player, (x, y), n)] + [end_turn]
+        return [move_to(t) for t in tween.tween(state.player, (x, y), n)] + [
+            end_turn
+        ]
     elif is_door(val):
         return [open_door((x, y))] + [wait] * int(FPS * 0.3 - 1) + [end_turn]
 

@@ -3,7 +3,7 @@ import pytweening
 
 
 LINEAR = lambda x: x
-EASE_IN_QUAD = lambda x: x**2
+EASE_IN_QUAD = lambda x: x ** 2
 
 EASE_IN_QUAD = pytweening.easeInQuad
 EASE_IN_CUBIC = pytweening.easeInCubic

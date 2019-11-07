@@ -50,6 +50,7 @@ class State:
         cx, cy = self.camera
         return px - cx, py - cy
 
+
 Action = Callable[[State], State]
 
 
@@ -75,9 +76,7 @@ def normalize(v):
 
 
 def cast_ray(
-    start: VecF,
-    direction: VecF,
-    hit_predicate,
+    start: VecF, direction: VecF, hit_predicate,
 ):
     """
     `start` is the position within the world, where each square is of size 1x1

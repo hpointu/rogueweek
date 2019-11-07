@@ -161,7 +161,7 @@ def carve_path(board: Board, level: Level, path: MPath) -> Board:
         if board.get(x, y) == 0:
             return board
 
-        top = board.get(x, y-1)
+        top = board.get(x, y - 1)
         val = 2 if last_i is None else 0
 
         if r1 == (1, 1):
@@ -173,7 +173,7 @@ def carve_path(board: Board, level: Level, path: MPath) -> Board:
         last_i = x, y
 
     x, y = p2
-    top = board.get(x, y-1)
+    top = board.get(x, y - 1)
     val = 0 if r2 == (1, 1) else 2
     if last_i is not None and cpt < 2:
         board.set(*last_i, 0)
@@ -223,13 +223,13 @@ def encode_floor(board: Board, index: int) -> int:
 
     elif is_wall(top_val):
         bin_str = str(top_val)
-        if bin_str[4] == '0' and bin_str[2] == '1':
+        if bin_str[4] == "0" and bin_str[2] == "1":
             return 31
-        elif bin_str[4] == '1' and bin_str[2] == '1':
+        elif bin_str[4] == "1" and bin_str[2] == "1":
             return 32
-        elif bin_str[4] == '1' and bin_str[2] == '0':
+        elif bin_str[4] == "1" and bin_str[2] == "0":
             return 33
-        elif bin_str[4] == '0' and bin_str[2] == '0':
+        elif bin_str[4] == "0" and bin_str[2] == "0":
             return 34
 
     elif top_val == 20:  # front door
@@ -249,11 +249,11 @@ def encode_door(board: Board, index: int) -> int:
 
     elif is_wall(top_val):
         bin_str = str(top_val)
-        if bin_str[4] == '0' and bin_str[2] == '1':
+        if bin_str[4] == "0" and bin_str[2] == "1":
             return 21
-        elif bin_str[4] == '1' and bin_str[2] == '1':
+        elif bin_str[4] == "1" and bin_str[2] == "1":
             return 22
-        elif bin_str[2] == '0':
+        elif bin_str[2] == "0":
             return 23
 
     return 20
@@ -264,7 +264,7 @@ def is_wall(val: int) -> bool:
 
 
 def is_door(val: int) -> bool:
-    return val == 2 or  20 <= val < 30
+    return val == 2 or 20 <= val < 30
 
 
 def is_empty(val: int) -> bool:
@@ -286,17 +286,14 @@ def clean_board(board: Board) -> Board:
                 board[i] = encode_door(board, i)
         elif val == 0:
             # Must happen after walls and doors
-            board[i]  = encode_floor(board, i)
+            board[i] = encode_floor(board, i)
 
     return board
 
 
 def create_board(level: Level):
     # fully walls (+ border)
-    board = Board(
-        cells=(SIDE * SIDE) * [1],
-        side=SIDE,
-    )
+    board = Board(cells=(SIDE * SIDE) * [1], side=SIDE,)
     for i, room in enumerate(level.rooms):
         board = carve_room(board, room, room_anchor(i))
 
