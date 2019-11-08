@@ -47,7 +47,7 @@ class DamageText:
         self.color = color
         x, y = pos
         self._path = list(
-            tween.tween(pos, (x, y - 10), 45, tween.EASE_OUT_CUBIC)
+            tween.tween(pos, (x, y - 10), 45, tween.EASE_OUT_QUAD)
         )
 
     def update(self, state):
@@ -62,6 +62,34 @@ class DamageText:
 
     def draw(self):
         pyxel.text(*self.pos, self.text, self.color)
+
+
+class Glitter:
+    def __init__(self, pos):
+        x, y = pos
+        direction = 0, 0
+        while direction == (0, 0):
+            direction = random.randint(-10, 10), random.randint(-10, 10)
+        direction = normalize(direction)
+        distance = (random.randint(5, 20) / 10) * CELL_SIZE
+        dx, dy = map((lambda x: x * distance), direction)
+        self._path = list(
+            tween.tween(pos, (x + dx, y + dy), 25, tween.EASE_IN_CUBIC)
+        )
+        self.color = random.choice([6, 7, 12])
+
+    def update(self, state):
+        self._path.pop(0)
+
+    def living(self):
+        return bool(self._path)
+
+    @property
+    def pos(self):
+        return self._path[0]
+
+    def draw(self):
+        pyxel.pix(*self.pos, self.color)
 
 
 def can_walk(board: Board, x, y) -> bool:
@@ -116,7 +144,9 @@ def game_turn(state: State):
             if can_walk(state.board, *n)
         ]
         if e.square in state.visible:
-            possible = sorted(possible, key=lambda x: dist(x, state.player.square))
+            possible = sorted(
+                possible, key=lambda x: dist(x, state.player.square)
+            )
             if possible[0] == state.player.square:
                 a = e.attack(state.player, _end)
                 ppos = state.to_pixel(state.player.pos, CELL_SIZE)
@@ -124,8 +154,11 @@ def game_turn(state: State):
             else:
                 e.move(*possible[0], _end)
         else:
-            target = random.choice(possible)
-            e.move(*target, _end, 1)
+            if possible:
+                target = random.choice(possible)
+                e.move(*target, _end, 1)
+            else:
+                e.wait(10, _end)
 
 
 def update(state: State) -> State:
@@ -189,6 +222,12 @@ def update(state: State) -> State:
     cy = py - lthreshold if py - cy < lthreshold else cy
     cy = py - rthreshold if py - cy > rthreshold else cy
     state.camera = cx, cy
+
+    for i in range(3):
+        state.particles.append(
+            Glitter(state.to_pixel(state.player.pos, CELL_SIZE))
+        )
+
 
     def ray_dirs(i):
         px, py = state.player.pos
