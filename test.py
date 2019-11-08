@@ -6,7 +6,7 @@ import pyxel
 import random
 
 from core import (
-    Actor,
+    Player,
     index_to_pos,
     dist,
     normalize,
@@ -223,8 +223,8 @@ def update(state: State) -> State:
         if dist(center, state.player.pos) < max_range * 2:
             state.in_range.add(i)
 
-    for i in range(3):
-        state.particles.append(Glitter(state.player.pos))
+    # for i in range(3):
+    #     state.particles.append(Glitter(state.player.pos))
 
 
     def ray_dirs(i):
@@ -360,7 +360,7 @@ def main():
 
     spawn = 0, 0
     state = State(
-        board=m, camera=(0, 0), player=Actor(spawn, 9000), enemies=enemies
+        board=m, camera=(0, 0), player=Player(spawn, 9000), enemies=enemies
     )
     state.particles = []
     pyxel.init(128, 128)

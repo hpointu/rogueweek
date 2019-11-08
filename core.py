@@ -18,7 +18,7 @@ ATTACK = 4
 
 
 ANIMATED = {
-    9000: (2, [(0, 32), (8, 32)], (0, 0), 10),
+    9000: (2, [(0, 32), (8, 32)], (0, 0), 4),
     9001: (2, [(0, 40), (8, 40)], (0, -2), 10),
     9002: (2, [(0, 48), (8, 48)], (0, 0), 11),
     9003: (2, [(0, 56), (8, 56)], (0, 0), 12),
@@ -74,20 +74,25 @@ class Actor:
     def is_busy(self):
         return self._callback is not None
 
+    def update(self, state):
+        self.sprite.update()
+        if self._action:
+            self._action()
+
     def attack(self, target, callback):
-        self._action = WAIT
+        self._action = self.do_wait
         self._callback = callback
         self._path = int(0.3 * 30)  # TODO wait for now, will change sprite
         target.pv -= 2
         return 2
 
     def move(self, x, y, callback, frames=int(30 * 0.3)):
-        self._action = MOVE
+        self._action = self.do_move
         self._callback = callback
         self._path = list(tween.tween(self.pos, (x, y), frames))
 
     def wait(self, nframes, callback):
-        self._action = WAIT
+        self._action = self.do_wait
         self._callback = callback
         self._path = nframes
 
@@ -97,16 +102,34 @@ class Actor:
         self._callback = None
         self._action = None
 
-    def update(self, state):
-        if self._action == MOVE:
-            self.pos = self._path.pop(0)
-            if not self._path:
-                self.end_turn()
+    def do_move(self):
+        self.pos = self._path.pop(0)
+        if not self._path:
+            self.end_turn()
 
-        elif self._action == WAIT:
-            self._path -= 1
-            if self._path < 1:
-                self.end_turn()
+    def do_wait(self):
+        self._path -= 1
+        if self._path < 1:
+            self.end_turn()
+
+
+class Player(Actor):
+
+    def move(self, *a, **kw):
+        super().move(*a, **kw)
+        self.sprite.play()
+
+    def wait(self, *a, **kw):
+        super().wait(*a, **kw)
+        self.sprite.play()
+
+    def attack(self, *a, **kw):
+        super().attack(*a, **kw)
+        self.sprite.play()
+
+    def end_turn(self):
+        super().end_turn()
+        self.sprite.stop()
 
 
 @dataclass
@@ -116,11 +139,24 @@ class AnimSprite:
     center: Tuple[int, int]
     rate: int
 
+    _start = 0
+    _playing = False
+
     @property
     def uv(self):
-        i = (pyxel.frame_count // self.rate) % self.count
+        i = (self._start // self.rate) % self.count
         return self.uvs[i]
 
+    def play(self):
+        self._playing = True
+
+    def stop(self):
+        self._start = 0
+        self._playing = False
+
+    def update(self):
+        if self._playing:
+            self._start += 1
 
 @dataclass
 class State:

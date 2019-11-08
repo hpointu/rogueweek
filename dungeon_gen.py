@@ -322,6 +322,7 @@ def populate_enemies(level: Level, board: Board):
             spid = random.choice([9001, 9002, 9003])
             e = Actor(index_to_pos(i, board.side), spid)
             e.pv = 4
+            e.sprite.play()
             enemies.append(e)
 
     return enemies
