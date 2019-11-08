@@ -40,6 +40,29 @@ CELL_SIZE = 8
 FPS = 30
 
 
+class DamageText:
+    def __init__(self, text, pos, color):
+        self.text = text
+        self.color = color
+        x, y = pos
+        self._path = list(
+            tween.tween(pos, (x, y - 10), 45, tween.EASE_OUT_CUBIC)
+        )
+
+    def update(self, state):
+        self._path.pop(0)
+
+    @property
+    def pos(self):
+        return self._path[0]
+
+    def living(self):
+        return bool(self._path)
+
+    def draw(self):
+        pyxel.text(*self.pos, self.text, self.color)
+
+
 def can_walk(board: Board, x, y) -> bool:
     return not board.outside(x, y) and is_empty(board.get(x, y))
 
@@ -69,13 +92,14 @@ def player_action(state, *target):
     if entity:
         # interact with an other entity
         # TODO assume it's an enemy for now, will change
-        state.player.attack(entity, _end)
+        a = state.player.attack(entity, _end)
+        ppos = state.to_pixel(entity.pos, CELL_SIZE)
+        state.particles.append(DamageText(f"-{a}", ppos, 12))
     elif can_walk(state.board, *target):
         state.player.move(*target, _end)
     elif is_door(val):
         open_door(state, target)
         state.player.wait(FPS * 0.3, _end)
-
 
 
 def game_turn(state: State):
@@ -91,7 +115,9 @@ def game_turn(state: State):
             ]
         )
         if state.player.square == target:
-            e.attack(state.player, _end)
+            a = e.attack(state.player, _end)
+            ppos = state.to_pixel(state.player.pos, CELL_SIZE)
+            state.particles.append(DamageText(f"-{a}", ppos, 8))
         elif e.square in state.visible:
             e.move(*target, _end)
         else:
@@ -123,8 +149,21 @@ def update(state: State) -> State:
 
     state.player.update(state)
 
+    deads = []
     for e in state.enemies:
         e.update(state)
+        if e.pv < 1:
+            deads.append(e)
+    for d in deads:
+        state.enemies.remove(d)
+
+    deads = []
+    for p in state.particles:
+        p.update(state)
+        if not p.living():
+            deads.append(p)
+    for d in deads:
+        state.particles.remove(d)
 
     px, py = state.player.pos
     cx, cy = state.camera
@@ -249,6 +288,8 @@ def draw(state: State):
             1
         )
 
+    for p in state.particles:
+        p.draw()
 
     pyxel.rect(3, 3, 2 * state.player.pv, 7, 2)
     pyxel.rect(3, 3, 2 * state.player.pv, 5, 8)
@@ -284,6 +325,7 @@ def main():
 
     spawn = 0, 0
     state = State(board=m, camera=(0, 0), player=Actor(spawn), enemies=enemies)
+    state.particles = []
     pyxel.init(128, 128)
     pyxel.load("my_resource.pyxres")
     # pyxel.run(partial(update_debug, state), partial(draw_debug, state))

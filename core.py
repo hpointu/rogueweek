@@ -70,6 +70,7 @@ class Actor:
         self._callback = callback
         self._path = int(0.3 * 30)  # TODO wait for now, will change sprite
         target.pv -= 2
+        return 2
 
     def move(self, x, y, callback, frames=int(30 * 0.3)):
         self._action = MOVE
@@ -121,6 +122,7 @@ class State:
     in_range = List[int]
     camera: Tuple[float, float]
     visible = List[int]
+    particles = List[int]
     actions: List[Any] = None
     player_turn: bool = True
 
@@ -128,6 +130,9 @@ class State:
         px, py = pos
         cx, cy = self.camera
         return px - cx, py - cy
+
+    def to_pixel(self, pos: Tuple[float, float], tile_size):
+        return tuple(c * tile_size for c in self.to_cam_space(pos))
 
 
 Action = Callable[[State], State]
