@@ -17,6 +17,14 @@ DOOR = 2
 ATTACK = 4
 
 
+ANIMATED = {
+    9000: (2, [(0, 32), (8, 32)], (0, 0), 10),
+    9001: (2, [(0, 40), (8, 40)], (0, -2), 10),
+    9002: (2, [(0, 48), (8, 48)], (0, 0), 11),
+    9003: (2, [(0, 56), (8, 56)], (0, 0), 12),
+}
+
+
 @dataclass
 class Board:
     cells: List[int]
@@ -57,7 +65,7 @@ class Actor:
         self._action = None
         self._path = None
         self._callback = None
-        self.sprite_id = sprite_id
+        self.sprite = AnimSprite(*ANIMATED[sprite_id])
 
     @property
     def square(self):

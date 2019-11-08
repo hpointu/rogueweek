@@ -15,6 +15,7 @@ from core import (
     Action,
     AnimSprite,
     pos_to_index,
+    ANIMATED,
 )
 
 from actions import open_door, end_turn
@@ -100,6 +101,8 @@ def player_action(state, *target):
     elif is_door(val):
         open_door(state, target)
         state.player.wait(FPS * 0.3, _end)
+    else:
+        state.player.wait(FPS * 0.3, _end)
 
 
 def game_turn(state: State):
@@ -107,20 +110,21 @@ def game_turn(state: State):
         return
     _end = end_turn(state, len(state.enemies))
     for e in state.enemies:
-        target = random.choice(
-            [
-                n
-                for n in state.board.neighbours(*e.pos)
-                if can_walk(state.board, *n)
-            ]
-        )
-        if state.player.square == target:
-            a = e.attack(state.player, _end)
-            ppos = state.to_pixel(state.player.pos, CELL_SIZE)
-            state.particles.append(DamageText(f"-{a}", ppos, 8))
-        elif e.square in state.visible:
-            e.move(*target, _end)
+        possible = [
+            n
+            for n in state.board.neighbours(*e.pos)
+            if can_walk(state.board, *n)
+        ]
+        if e.square in state.visible:
+            possible = sorted(possible, key=lambda x: dist(x, state.player.square))
+            if possible[0] == state.player.square:
+                a = e.attack(state.player, _end)
+                ppos = state.to_pixel(state.player.pos, CELL_SIZE)
+                state.particles.append(DamageText(f"-{a}", ppos, 8))
+            else:
+                e.move(*possible[0], _end)
         else:
+            target = random.choice(possible)
             e.move(*target, _end, 1)
 
 
@@ -223,14 +227,6 @@ YES = (0, 32)
 NO = (8, 32)
 
 
-ANIMATED = {
-    9000: AnimSprite(2, [(0, 32), (8, 32)], (0, 0), 10),
-    9001: AnimSprite(2, [(0, 40), (8, 40)], (0, -2), 10),
-    9002: AnimSprite(2, [(0, 48), (8, 48)], (0, 0), 11),
-    9003: AnimSprite(2, [(0, 56), (8, 56)], (0, 0), 12),
-}
-
-
 def draw(state: State):
     pyxel.cls(0)
 
@@ -264,7 +260,7 @@ def draw(state: State):
         )
 
     x, y = state.to_cam_space(state.player.pos)
-    sp = ANIMATED[9000]
+    sp = state.player.sprite
     pyxel.blt(
         x * CELL_SIZE - sp.center[0],
         y * CELL_SIZE - sp.center[1],
@@ -279,7 +275,7 @@ def draw(state: State):
         if enemy.square not in state.visible:
             continue
         x, y = state.to_cam_space(enemy.pos)
-        sp = ANIMATED[enemy.sprite_id]
+        sp = enemy.sprite
         pyxel.blt(
             x * CELL_SIZE - sp.center[0],
             y * CELL_SIZE - sp.center[1],
