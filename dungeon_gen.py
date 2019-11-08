@@ -319,7 +319,8 @@ def populate_enemies(level: Level, board: Board):
         r = random.randint(0, 100)
 
         if r > 98:
-            e = Actor(index_to_pos(i, board.side))
+            spid = random.choice([9001, 9002, 9003])
+            e = Actor(index_to_pos(i, board.side), spid)
             e.pv = 4
             enemies.append(e)
 

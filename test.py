@@ -224,14 +224,17 @@ NO = (8, 32)
 
 
 ANIMATED = {
+    9000: AnimSprite(2, [(0, 32), (8, 32)], (0, 0), 10),
     9001: AnimSprite(2, [(0, 40), (8, 40)], (0, -2), 10),
+    9002: AnimSprite(2, [(0, 48), (8, 48)], (0, 0), 11),
+    9003: AnimSprite(2, [(0, 56), (8, 56)], (0, 0), 12),
 }
 
 
 def draw(state: State):
     pyxel.cls(0)
 
-    player_sprite = (0, 24)
+    player_sprite = (0, 32)
     non_walls = {
         0: (32, 16),
         30: (40, 24),
@@ -257,35 +260,34 @@ def draw(state: State):
         colors = WALLS if is_wall(v) else non_walls
         u_, v_ = colors[v]
         pyxel.blt(
-            x * CELL_SIZE, y * CELL_SIZE, 1, u_, v_, CELL_SIZE, CELL_SIZE
+            x * CELL_SIZE, y * CELL_SIZE, 0, u_, v_, CELL_SIZE, CELL_SIZE
         )
 
     x, y = state.to_cam_space(state.player.pos)
-    u, v = player_sprite
+    sp = ANIMATED[9000]
     pyxel.blt(
-        x * CELL_SIZE,
-        y * CELL_SIZE,
+        x * CELL_SIZE - sp.center[0],
+        y * CELL_SIZE - sp.center[1],
         0,
-        u,
-        v,
+        *sp.uv,
         CELL_SIZE * state.player.orientation,
         CELL_SIZE,
-        5,
+        1,
     )
 
     for enemy in state.enemies:
         if enemy.square not in state.visible:
             continue
         x, y = state.to_cam_space(enemy.pos)
-        sp = ANIMATED[9001]
+        sp = ANIMATED[enemy.sprite_id]
         pyxel.blt(
             x * CELL_SIZE - sp.center[0],
             y * CELL_SIZE - sp.center[1],
-            1,
+            0,
             *sp.uv,
             CELL_SIZE,
             CELL_SIZE,
-            1
+            1,
         )
 
     for p in state.particles:
@@ -324,7 +326,9 @@ def main():
     # enemies = [Actor((2, 0))]
 
     spawn = 0, 0
-    state = State(board=m, camera=(0, 0), player=Actor(spawn), enemies=enemies)
+    state = State(
+        board=m, camera=(0, 0), player=Actor(spawn, 9000), enemies=enemies
+    )
     state.particles = []
     pyxel.init(128, 128)
     pyxel.load("my_resource.pyxres")

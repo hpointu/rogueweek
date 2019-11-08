@@ -52,11 +52,12 @@ class Actor:
     orientation = 1
     pv = 20
 
-    def __init__(self, pos):
+    def __init__(self, pos, sprite_id):
         self.pos = pos
         self._action = None
         self._path = None
         self._callback = None
+        self.sprite_id = sprite_id
 
     @property
     def square(self):
