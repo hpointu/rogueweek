@@ -14,6 +14,7 @@ EW, NS = 0, 1
 WAIT = 0
 MOVE = 1
 DOOR = 2
+ATTACK = 4
 
 
 @dataclass
@@ -48,6 +49,9 @@ class Board:
 
 
 class Actor:
+    orientation = 1
+    pv = 20
+
     def __init__(self, pos):
         self.pos = pos
         self._action = None
@@ -61,10 +65,16 @@ class Actor:
     def is_busy(self):
         return self._callback is not None
 
+    def attack(self, target, callback):
+        self._action = WAIT
+        self._callback = callback
+        self._path = int(0.3 * 30)  # TODO wait for now, will change sprite
+        target.pv -= 2
+
     def move(self, x, y, callback, frames=int(30 * 0.3)):
         self._action = MOVE
-        self._path = list(tween.tween(self.pos, (x, y), frames))
         self._callback = callback
+        self._path = list(tween.tween(self.pos, (x, y), frames))
 
     def wait(self, nframes, callback):
         self._action = WAIT
@@ -112,7 +122,6 @@ class State:
     camera: Tuple[float, float]
     visible = List[int]
     actions: List[Any] = None
-    orientation: int = 1
     player_turn: bool = True
 
     def to_cam_space(self, pos: Tuple[float, float]):

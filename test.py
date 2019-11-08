@@ -63,11 +63,19 @@ def player_action(state, *target):
         return
 
     val = state.board.get(*target)
-    if can_walk(state.board, *target):
-        state.player.move(*target, end_turn(state))
+    entity = find_entity(state, *target)
+    _end = end_turn(state)
+
+    if entity:
+        # interact with an other entity
+        # TODO assume it's an enemy for now, will change
+        state.player.attack(entity, _end)
+    elif can_walk(state.board, *target):
+        state.player.move(*target, _end)
     elif is_door(val):
         open_door(state, target)
-        state.player.wait(FPS * 0.3, end_turn(state))
+        state.player.wait(FPS * 0.3, _end)
+
 
 
 def game_turn(state: State):
@@ -82,7 +90,9 @@ def game_turn(state: State):
                 if can_walk(state.board, *n)
             ]
         )
-        if e.square in state.visible:
+        if state.player.square == target:
+            e.attack(state.player, _end)
+        elif e.square in state.visible:
             e.move(*target, _end)
         else:
             e.move(*target, _end, 1)
@@ -104,10 +114,10 @@ def update(state: State) -> State:
             player_action(state, x, y - 1)
         elif pyxel.btn(pyxel.KEY_LEFT):
             player_action(state, x - 1, y)
-            state.orientation = -1
+            state.player.orientation = -1
         elif pyxel.btn(pyxel.KEY_RIGHT):
             player_action(state, x + 1, y)
-            state.orientation = 1
+            state.player.orientation = 1
     else:
         game_turn(state)
 
@@ -219,7 +229,7 @@ def draw(state: State):
         0,
         u,
         v,
-        CELL_SIZE * state.orientation,
+        CELL_SIZE * state.player.orientation,
         CELL_SIZE,
         5,
     )
@@ -238,6 +248,12 @@ def draw(state: State):
             CELL_SIZE,
             1
         )
+
+
+    pyxel.rect(3, 3, 2 * state.player.pv, 7, 2)
+    pyxel.rect(3, 3, 2 * state.player.pv, 5, 8)
+    pyxel.rect(4, 4, 2 * state.player.pv - 2, 1, 14)
+    pyxel.rectb(2, 2, 42, 8, 1)
 
 
 def update_debug(state: State):
