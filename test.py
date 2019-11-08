@@ -60,7 +60,7 @@ class DamageText:
     def living(self):
         return bool(self._path)
 
-    def draw(self):
+    def draw(self, state):
         pyxel.text(*self.pos, self.text, self.color)
 
 
@@ -71,10 +71,10 @@ class Glitter:
         while direction == (0, 0):
             direction = random.randint(-10, 10), random.randint(-10, 10)
         direction = normalize(direction)
-        distance = (random.randint(5, 20) / 10) * CELL_SIZE
+        distance = (random.randint(5, 20) / 10)
         dx, dy = map((lambda x: x * distance), direction)
         self._path = list(
-            tween.tween(pos, (x + dx, y + dy), 25, tween.EASE_IN_CUBIC)
+            tween.tween(pos, (x + dx, y + dy), 20, tween.EASE_IN_QUAD)
         )
         self.color = random.choice([6, 7, 12])
 
@@ -88,8 +88,8 @@ class Glitter:
     def pos(self):
         return self._path[0]
 
-    def draw(self):
-        pyxel.pix(*self.pos, self.color)
+    def draw(self, state):
+        pyxel.pix(*state.to_pixel(self.pos, CELL_SIZE), self.color)
 
 
 def can_walk(board: Board, x, y) -> bool:
@@ -186,6 +186,18 @@ def update(state: State) -> State:
 
     state.player.update(state)
 
+
+    # Move camera if needed
+    px, py = state.player.pos
+    cx, cy = state.camera
+    lthreshold = 6
+    rthreshold = 10
+    cx = px - lthreshold if px - cx < lthreshold else cx
+    cx = px - rthreshold if px - cx > rthreshold else cx
+    cy = py - lthreshold if py - cy < lthreshold else cy
+    cy = py - rthreshold if py - cy > rthreshold else cy
+    state.camera = cx, cy
+
     deads = []
     for e in state.enemies:
         e.update(state)
@@ -202,9 +214,6 @@ def update(state: State) -> State:
     for d in deads:
         state.particles.remove(d)
 
-    px, py = state.player.pos
-    cx, cy = state.camera
-
     # store in-range block indices
     max_range = state.max_range
     state.in_range = set()
@@ -214,19 +223,8 @@ def update(state: State) -> State:
         if dist(center, state.player.pos) < max_range * 2:
             state.in_range.add(i)
 
-    # Move camera if needed
-    lthreshold = 6
-    rthreshold = 10
-    cx = px - lthreshold if px - cx < lthreshold else cx
-    cx = px - rthreshold if px - cx > rthreshold else cx
-    cy = py - lthreshold if py - cy < lthreshold else cy
-    cy = py - rthreshold if py - cy > rthreshold else cy
-    state.camera = cx, cy
-
     for i in range(3):
-        state.particles.append(
-            Glitter(state.to_pixel(state.player.pos, CELL_SIZE))
-        )
+        state.particles.append(Glitter(state.player.pos))
 
 
     def ray_dirs(i):
@@ -326,7 +324,7 @@ def draw(state: State):
         )
 
     for p in state.particles:
-        p.draw()
+        p.draw(state)
 
     pyxel.rect(3, 3, 2 * state.player.pv, 7, 2)
     pyxel.rect(3, 3, 2 * state.player.pv, 5, 8)
