@@ -39,21 +39,31 @@ class Board:
     def outside(self, x, y):
         return x < 0 or y < 0 or x >= self.side or y >= self.side
 
+    def neighbours(self, x, y):
+        return [
+            (x_, y_)
+            for x_, y_ in [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y),]
+            if not self.outside(x_, y_)
+        ]
 
-class Player:
+
+class Actor:
     def __init__(self, pos):
         self.pos = pos
         self._action = None
         self._path = None
         self._callback = None
 
+    @property
+    def square(self):
+        return tuple(map(int, self.pos))
+
     def is_busy(self):
         return self._callback is not None
 
-    def move(self, x, y, callback):
+    def move(self, x, y, callback, frames=int(30 * 0.3)):
         self._action = MOVE
-        n = int(30 * 0.3)
-        self._path = list(tween.tween(self.pos, (x, y), n))
+        self._path = list(tween.tween(self.pos, (x, y), frames))
         self._callback = callback
 
     def wait(self, nframes, callback):
@@ -93,16 +103,11 @@ class AnimSprite:
 
 
 @dataclass
-class Enemy:
-    pos: Tuple[float, float]
-
-
-@dataclass
 class State:
     max_range = 5
-    player: Player
+    player: Actor
     board: Board
-    enemies: List[Enemy]
+    enemies: List[Actor]
     in_range = List[int]
     camera: Tuple[float, float]
     visible = List[int]

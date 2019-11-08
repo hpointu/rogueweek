@@ -2,7 +2,7 @@ import random
 from dataclasses import dataclass
 from typing import List, Tuple
 
-from core import index_to_pos, Board, Enemy
+from core import index_to_pos, Board, Actor
 
 M_SIZE = 4
 MAX_ROOM_SIZE = 8
@@ -319,6 +319,6 @@ def populate_enemies(level: Level, board: Board):
         r = random.randint(0, 100)
 
         if r > 98:
-            enemies.append(Enemy(pos=index_to_pos(i, board.side)))
+            enemies.append(Actor(index_to_pos(i, board.side)))
 
     return enemies

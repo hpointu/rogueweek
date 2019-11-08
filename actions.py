@@ -4,10 +4,13 @@ from core import dist, pos_to_index
 from dungeon_gen import encode_floor, is_empty
 
 
-def end_turn(state: State):
+def end_turn(state: State, n: int = 1):
     def _do(caller):
-        state.player_turn = not state.player_turn
-        print(f"to_play: {'player' if state.player_turn else 'game'}")
+        nonlocal n
+        n -= 1
+        if n < 1:
+            state.player_turn = not state.player_turn
+            print(f"to_play: {'player' if state.player_turn else 'game'}")
         return state
 
     return _do

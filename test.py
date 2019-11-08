@@ -3,9 +3,10 @@ from typing import Any, Dict, Tuple, List
 from dataclasses import dataclass
 
 import pyxel
+import random
 
 from core import (
-    Player,
+    Actor,
     index_to_pos,
     dist,
     normalize,
@@ -39,6 +40,10 @@ CELL_SIZE = 8
 FPS = 30
 
 
+def can_walk(board: Board, x, y) -> bool:
+    return not board.outside(x, y) and is_empty(board.get(x, y))
+
+
 def find_entity(state, x, y):
     for e in state.enemies:
         if e.pos == (x, y):
@@ -58,11 +63,29 @@ def player_action(state, *target):
         return
 
     val = state.board.get(*target)
-    if is_empty(val):
+    if can_walk(state.board, *target):
         state.player.move(*target, end_turn(state))
     elif is_door(val):
         open_door(state, target)
         state.player.wait(FPS * 0.3, end_turn(state))
+
+
+def game_turn(state: State):
+    if any(e.is_busy() for e in state.enemies):
+        return
+    _end = end_turn(state, len(state.enemies))
+    for e in state.enemies:
+        target = random.choice(
+            [
+                n
+                for n in state.board.neighbours(*e.pos)
+                if can_walk(state.board, *n)
+            ]
+        )
+        if e.square in state.visible:
+            e.move(*target, _end)
+        else:
+            e.move(*target, _end, 1)
 
 
 def update(state: State) -> State:
@@ -86,9 +109,12 @@ def update(state: State) -> State:
             player_action(state, x + 1, y)
             state.orientation = 1
     else:
-        end_turn(state)(state)
+        game_turn(state)
 
     state.player.update(state)
+
+    for e in state.enemies:
+        e.update(state)
 
     px, py = state.player.pos
     cx, cy = state.camera
@@ -153,21 +179,6 @@ ANIMATED = {
 }
 
 
-def add_effects(state, effects):
-    if state.effects is None:
-        state.effects = effects
-    else:
-        state.effects = combine(state.effects, effects)
-    return state
-
-
-def draw_text(x, y, text, color):
-    def _effect(state):
-        pyxel.text(x, y, text, color)
-
-    return _effect
-
-
 def draw(state: State):
     pyxel.cls(0)
 
@@ -185,8 +196,6 @@ def draw(state: State):
         22: (56, 8),
         23: (56, 0),
     }
-
-    cx, cy = state.camera
 
     # draw in range
     for x, y in state.visible:
@@ -216,7 +225,7 @@ def draw(state: State):
     )
 
     for enemy in state.enemies:
-        if enemy.pos not in state.visible:
+        if enemy.square not in state.visible:
             continue
         x, y = state.to_cam_space(enemy.pos)
         sp = ANIMATED[9001]
@@ -253,13 +262,12 @@ def draw_debug(state: State):
 def main():
     level = generate_level(create_matrix())
     m = create_board(level)
+
     enemies = populate_enemies(level, m)
-    print(enemies)
+    # enemies = [Actor((2, 0))]
 
     spawn = 0, 0
-    state = State(
-        board=m, camera=(0, 0), player=Player(spawn), enemies=enemies
-    )
+    state = State(board=m, camera=(0, 0), player=Actor(spawn), enemies=enemies)
     pyxel.init(128, 128)
     pyxel.load("my_resource.pyxres")
     # pyxel.run(partial(update_debug, state), partial(draw_debug, state))
