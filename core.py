@@ -1,20 +1,15 @@
+from __future__ import annotations
 import pyxel
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import IntEnum
 from math import sqrt
-from typing import List, Tuple, Any, Callable
+from typing import List, Tuple, Any, Callable, Set
 import tween
 
 GridCoord = Tuple[int, int]
 VecF = Tuple[float, float]
 
 EW, NS = 0, 1
-
-
-WAIT = 0
-MOVE = 1
-DOOR = 2
-ATTACK = 4
 
 
 ANIMATED = {
@@ -68,8 +63,9 @@ class Actor:
         self.sprite = AnimSprite(*ANIMATED[sprite_id])
 
     @property
-    def square(self):
-        return tuple(map(int, self.pos))
+    def square(self) -> GridCoord:
+        x, y = map(int, self.pos)
+        return x, y
 
     def is_busy(self):
         return self._callback is not None
@@ -114,7 +110,6 @@ class Actor:
 
 
 class Player(Actor):
-
     def move(self, *a, **kw):
         super().move(*a, **kw)
         self.sprite.play()
@@ -124,8 +119,9 @@ class Player(Actor):
         self.sprite.play()
 
     def attack(self, *a, **kw):
-        super().attack(*a, **kw)
+        r = super().attack(*a, **kw)
         self.sprite.play()
+        return r
 
     def end_turn(self):
         super().end_turn()
@@ -158,17 +154,17 @@ class AnimSprite:
         if self._playing:
             self._start += 1
 
+
 @dataclass
 class State:
     max_range = 5
     player: Actor
     board: Board
-    enemies: List[Actor]
-    in_range = List[int]
     camera: Tuple[float, float]
-    visible = List[int]
-    particles = List[int]
-    actions: List[Any] = None
+    enemies: List[Actor] = field(default_factory=list)
+    in_range: Set[Any] = field(default_factory=set)
+    visible: Set[GridCoord] = field(default_factory=set)
+    particles: List[Particle] = field(default_factory=list)
     player_turn: bool = True
 
     def to_cam_space(self, pos: Tuple[float, float]):
@@ -180,7 +176,15 @@ class State:
         return tuple(c * tile_size for c in self.to_cam_space(pos))
 
 
-Action = Callable[[State], State]
+class Particle:
+    def draw(self, state: State):
+        raise NotImplementedError
+
+    def update(self, state: State):
+        raise NotImplementedError
+
+    def living(self) -> bool:
+        raise NotImplementedError
 
 
 def index_to_pos(index: int, width: int) -> GridCoord:

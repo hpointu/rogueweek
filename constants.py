@@ -1,0 +1,2 @@
+CELL_SIZE = 8
+FPS = 30

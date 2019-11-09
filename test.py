@@ -5,18 +5,22 @@ from dataclasses import dataclass
 import pyxel
 import random
 
+from constants import FPS, CELL_SIZE
+
 from core import (
     Player,
+    VecF,
     index_to_pos,
     dist,
     normalize,
     cast_ray,
     State,
-    Action,
     AnimSprite,
     pos_to_index,
     ANIMATED,
 )
+
+from particles import Glitter, DamageText
 
 from actions import open_door, end_turn
 
@@ -37,61 +41,6 @@ from dungeon_gen import (
 import tween
 
 
-CELL_SIZE = 8
-FPS = 30
-
-
-class DamageText:
-    def __init__(self, text, pos, color):
-        self.text = text
-        self.color = color
-        x, y = pos
-        self._path = list(
-            tween.tween(pos, (x, y - 10), 45, tween.EASE_OUT_QUAD)
-        )
-
-    def update(self, state):
-        self._path.pop(0)
-
-    @property
-    def pos(self):
-        return self._path[0]
-
-    def living(self):
-        return bool(self._path)
-
-    def draw(self, state):
-        pyxel.text(*self.pos, self.text, self.color)
-
-
-class Glitter:
-    def __init__(self, pos):
-        x, y = pos
-        direction = 0, 0
-        while direction == (0, 0):
-            direction = random.randint(-10, 10), random.randint(-10, 10)
-        direction = normalize(direction)
-        distance = (random.randint(5, 20) / 10)
-        dx, dy = map((lambda x: x * distance), direction)
-        self._path = list(
-            tween.tween(pos, (x + dx, y + dy), 20, tween.EASE_IN_QUAD)
-        )
-        self.color = random.choice([6, 7, 12])
-
-    def update(self, state):
-        self._path.pop(0)
-
-    def living(self):
-        return bool(self._path)
-
-    @property
-    def pos(self):
-        return self._path[0]
-
-    def draw(self, state):
-        pyxel.pix(*state.to_pixel(self.pos, CELL_SIZE), self.color)
-
-
 def can_walk(board: Board, x, y) -> bool:
     return not board.outside(x, y) and is_empty(board.get(x, y))
 
@@ -103,17 +52,11 @@ def find_entity(state, x, y):
     return None
 
 
-def game_turn(state: State) -> List[Action]:
-    # Game just waits five seconds and gives back player hand
-    if state.actions:
-        return state.actions
-    return [end_turn]
-
-
-def player_action(state, *target):
+def player_action(state: State, x, y):
     if state.player.is_busy():
         return
 
+    target = x, y
     val = state.board.get(*target)
     entity = find_entity(state, *target)
     _end = end_turn(state)
@@ -152,11 +95,12 @@ def game_turn(state: State):
                 ppos = state.to_pixel(state.player.pos, CELL_SIZE)
                 state.particles.append(DamageText(f"-{a}", ppos, 8))
             else:
-                e.move(*possible[0], _end)
+                x, y = possible[0]
+                e.move(x, y, _end)
         else:
             if possible:
-                target = random.choice(possible)
-                e.move(*target, _end, 1)
+                x, y = random.choice(possible)
+                e.move(x, y, _end, 1)
             else:
                 e.wait(10, _end)
 
@@ -198,21 +142,21 @@ def update(state: State) -> State:
     cy = py - rthreshold if py - cy > rthreshold else cy
     state.camera = cx, cy
 
-    deads = []
+    deads_enemies = []
     for e in state.enemies:
         e.update(state)
         if e.pv < 1:
-            deads.append(e)
-    for d in deads:
+            deads_enemies.append(e)
+    for d in deads_enemies:
         state.enemies.remove(d)
 
-    deads = []
+    deads_particles = []
     for p in state.particles:
         p.update(state)
         if not p.living():
-            deads.append(p)
-    for d in deads:
-        state.particles.remove(d)
+            deads_particles.append(p)
+    for dp in deads_particles:
+        state.particles.remove(dp)
 
     # store in-range block indices
     max_range = state.max_range
@@ -223,8 +167,8 @@ def update(state: State) -> State:
         if dist(center, state.player.pos) < max_range * 2:
             state.in_range.add(i)
 
-    # for i in range(3):
-    #     state.particles.append(Glitter(state.player.pos))
+    for i in range(3):
+        state.particles.append(Glitter(state.player.pos))
 
 
     def ray_dirs(i):
@@ -249,7 +193,7 @@ def update(state: State) -> State:
             or is_door(state.board.get(x, y))
         )
 
-    rays = sum([ray_dirs(i) for i in state.in_range], [])
+    rays: List[VecF] = sum([ray_dirs(i) for i in state.in_range], [])
     state.visible = set()
     for r in rays:
         trav, hit, _ = cast_ray((px + 0.5, py + 0.5), r, hit_wall)
