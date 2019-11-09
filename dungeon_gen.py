@@ -161,7 +161,6 @@ def carve_path(board: Board, level: Level, path: MPath) -> Board:
         if board.get(x, y) == 0:
             return board
 
-        top = board.get(x, y - 1)
         val = 2 if last_i is None else 0
 
         if r1 == (1, 1):
@@ -173,7 +172,6 @@ def carve_path(board: Board, level: Level, path: MPath) -> Board:
         last_i = x, y
 
     x, y = p2
-    top = board.get(x, y - 1)
     val = 0 if r2 == (1, 1) else 2
     if last_i is not None and cpt < 2:
         board.set(*last_i, 0)

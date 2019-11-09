@@ -36,7 +36,7 @@ class Glitter(Particle):
         while direction == (0, 0):
             direction = random.randint(-10, 10), random.randint(-10, 10)
         direction = normalize(direction)
-        distance = (random.randint(5, 20) / 10)
+        distance = random.randint(5, 20) / 10
         dx, dy = map((lambda x: x * distance), direction)
         self._path = list(
             tween.tween(pos, (x + dx, y + dy), 20, tween.EASE_IN_QUAD)

@@ -1,9 +1,7 @@
 from __future__ import annotations
-import pyxel
 from dataclasses import dataclass, field
-from enum import IntEnum
 from math import sqrt
-from typing import List, Tuple, Any, Callable, Set
+from typing import List, Tuple, Any, Set
 import tween
 
 GridCoord = Tuple[int, int]
@@ -46,7 +44,7 @@ class Board:
     def neighbours(self, x, y):
         return [
             (x_, y_)
-            for x_, y_ in [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y),]
+            for x_, y_ in [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)]
             if not self.outside(x_, y_)
         ]
 
@@ -204,8 +202,8 @@ def dist(p1, p2):
 
 
 def normalize(v):
-    l = dist((0, 0), v)
-    return v[0] / l, v[1] / l
+    length = dist((0, 0), v)
+    return v[0] / length, v[1] / length
 
 
 def cast_ray(

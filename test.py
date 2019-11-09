@@ -1,6 +1,5 @@
 from functools import partial
-from typing import Any, Dict, Tuple, List
-from dataclasses import dataclass
+from typing import List
 
 import pyxel
 import random
@@ -12,12 +11,8 @@ from core import (
     VecF,
     index_to_pos,
     dist,
-    normalize,
     cast_ray,
     State,
-    AnimSprite,
-    pos_to_index,
-    ANIMATED,
 )
 
 from particles import Glitter, DamageText
@@ -27,9 +22,6 @@ from actions import open_door, end_turn
 from dungeon_gen import (
     create_matrix,
     Board,
-    Matrix,
-    Position,
-    Level,
     generate_level,
     populate_enemies,
     create_board,
@@ -38,7 +30,6 @@ from dungeon_gen import (
     is_empty,
     is_wall,
 )
-import tween
 
 
 def can_walk(board: Board, x, y) -> bool:
@@ -106,12 +97,6 @@ def game_turn(state: State):
 
 
 def update(state: State) -> State:
-    dx: float
-    dy: float
-
-    dx, dy = 0, 0
-    step = 0.08
-
     x, y = state.player.pos
 
     if state.player_turn:
@@ -129,7 +114,6 @@ def update(state: State) -> State:
         game_turn(state)
 
     state.player.update(state)
-
 
     # Move camera if needed
     px, py = state.player.pos
@@ -170,17 +154,16 @@ def update(state: State) -> State:
     for i in range(3):
         state.particles.append(Glitter(state.player.pos))
 
-
     def ray_dirs(i):
         px, py = state.player.pos
-        c, l = index_to_pos(i, state.board.side)
+        c, r = index_to_pos(i, state.board.side)
         return [
             (x - px, y - py)
             for x, y in [
-                (c + 0.5, l),
-                (c + 1, l + 0.5),
-                (c + 0.5, l + 1),
-                (c, l + 0.5),
+                (c + 0.5, r),
+                (c + 1, r + 0.5),
+                (c + 0.5, r + 1),
+                (c, r + 0.5),
             ]
             if x - px and y - py
         ]
@@ -211,7 +194,6 @@ NO = (8, 32)
 def draw(state: State):
     pyxel.cls(0)
 
-    player_sprite = (0, 32)
     non_walls = {
         0: (32, 16),
         30: (40, 24),

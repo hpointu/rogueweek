@@ -1,6 +1,5 @@
-from itertools import zip_longest
-from core import State, VecF
-from core import dist, pos_to_index
+from core import State
+from core import pos_to_index
 from dungeon_gen import encode_floor, is_empty
 
 
