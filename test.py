@@ -24,7 +24,6 @@ from dungeon_gen import (
     Board,
     generate_level,
     populate_enemies,
-    create_board,
     WALLS,
     is_door,
     is_empty,
@@ -258,41 +257,30 @@ def draw(state: State):
     pyxel.rectb(2, 2, 42, 8, 1)
 
 
-def update_debug(state: State):
-    pass
-
-
-def draw_debug(state: State):
-    pyxel.cls(0)
-    U = 3
-    for i in range(len(state.board)):
-        x, y = index_to_pos(i, state.board.side)
-        v = state.board[i]
-        if is_wall(v):
-            col = 0
-        elif is_door(v):
-            col = 8
-        else:
-            col = 7
-        pyxel.rect(x * U, y * U, U, U, col)
-
-
 def main():
-    level = generate_level(create_matrix())
-    m = create_board(level)
+    level, m = generate_level(create_matrix())
+
+    print(level.final_room)
 
     enemies = populate_enemies(level, m)
     # enemies = [Actor((2, 0))]
 
     spawn = 0, 0
     state = State(
-        board=m, camera=(0, 0), player=Player(spawn, 9000), enemies=enemies
+        level=level,
+        board=m,
+        camera=(0, 0),
+        player=Player(spawn, 9000),
+        enemies=enemies,
     )
     state.particles = []
     pyxel.init(128, 128)
     pyxel.load("my_resource.pyxres")
-    # pyxel.run(partial(update_debug, state), partial(draw_debug, state))
-    pyxel.run(partial(update, state), partial(draw, state))
+    # pyxel.run(partial(update, state), partial(draw, state))
+
+    from debug import update_debug, draw_debug
+
+    pyxel.run(partial(update_debug, state), partial(draw_debug, state))
 
 
 if __name__ == "__main__":

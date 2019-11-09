@@ -17,6 +17,20 @@ ANIMATED = {
     9003: (2, [(0, 56), (8, 56)], (0, 0), 12),
 }
 
+MPath = Tuple[int, int]
+Matrix = List[MPath]
+Size = Tuple[int, int]
+Position = Tuple[int, int]
+Room = Tuple[Size, Position]
+
+
+@dataclass
+class Level:
+    matrix: Matrix
+    rooms: List[Room]
+    start_room: int = 0
+    final_room: int = 0
+
 
 @dataclass
 class Board:
@@ -157,6 +171,7 @@ class AnimSprite:
 class State:
     max_range = 5
     player: Actor
+    level: Level
     board: Board
     camera: Tuple[float, float]
     enemies: List[Actor] = field(default_factory=list)

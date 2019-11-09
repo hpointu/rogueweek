@@ -1,19 +1,22 @@
 import random
-from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
-from core import index_to_pos, Board, Actor
+from core import (
+    index_to_pos,
+    Board,
+    Actor,
+    dist,
+    pos_to_index,
+    Level,
+    Matrix,
+    MPath,
+    Room,
+    Position,
+)
 
 M_SIZE = 4
 MAX_ROOM_SIZE = 8
 SIDE = M_SIZE * MAX_ROOM_SIZE
-
-MPath = Tuple[int, int]
-Matrix = List[MPath]
-Size = Tuple[int, int]
-Position = Tuple[int, int]
-Room = Tuple[Size, Position]
-
 
 # 1TRBL
 WALLS = {
@@ -35,12 +38,6 @@ WALLS = {
     11110: (0, 8),
     11111: (8, 8),
 }
-
-
-@dataclass
-class Level:
-    matrix: Matrix
-    rooms: List[Room]
 
 
 def matrix_neighbours(index: int) -> List[int]:
@@ -301,11 +298,69 @@ def create_board(level: Level):
     return clean_board(board)
 
 
-def generate_level(matrix: Matrix) -> Level:
-    return Level(
-        matrix=matrix,
-        rooms=[random_room(matrix, i) for i in range(M_SIZE * M_SIZE)],
-    )
+def pick_final_room(level: Level) -> Optional[int]:
+    for i, room in enumerate(level.rooms):
+        n = count_neighbours(level.matrix, i)
+
+        if n > 1:
+            continue
+
+        x, y = index_to_pos(i, M_SIZE)
+        w, h = room[0]
+
+        if x < M_SIZE - 1 and w >= MAX_ROOM_SIZE:
+            continue
+
+        if y < M_SIZE - 1 and h >= MAX_ROOM_SIZE:
+            continue
+
+        left = pos_to_index(x - 1, y, M_SIZE)
+        top = pos_to_index(x, y - 1, M_SIZE)
+        left_size = level.rooms[left][0] if x > 0 else None
+        top_size = level.rooms[top][0] if y > 0 else None
+
+        if left_size and left_size[0] >= MAX_ROOM_SIZE:
+            continue
+
+        if top_size and top_size[1] >= MAX_ROOM_SIZE:
+            continue
+
+        return i
+
+    return None
+
+
+def pick_starting_room(level: Level) -> int:
+    start = level.final_room
+
+    p0 = index_to_pos(start, M_SIZE)
+    far, d = p0, 0
+    for i in range(len(level.rooms)):
+        if i == start or level.rooms[i][0] == (1, 1):
+            continue
+        pi = index_to_pos(i, M_SIZE)
+        di = dist(p0, pi)
+        if di > d:
+            far = pi
+            d = di
+
+    return pos_to_index(*far, M_SIZE)
+
+
+def generate_level(matrix: Matrix) -> Tuple[Level, Board]:
+    final_room = None
+
+    while final_room is None:
+        level = Level(
+            matrix=matrix,
+            rooms=[random_room(matrix, i) for i in range(M_SIZE * M_SIZE)],
+        )
+        final_room = pick_final_room(level)
+
+    level.final_room = final_room
+    level.start_room = pick_starting_room(level)
+    board = create_board(level)
+    return level, board
 
 
 def populate_enemies(level: Level, board: Board):
