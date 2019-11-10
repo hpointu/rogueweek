@@ -1,5 +1,5 @@
 import random
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 from rogue.graph import neighbours_map, find_paths, extract_path
 
 from rogue.core import (
