@@ -11,6 +11,15 @@ def neighbours_map(matrix):
     return neighbours
 
 
+def board_neighbours(board, can_walk_fn, i):
+    x, y = board.to_pos(i)
+    return [
+        board.to_index(*pos)
+        for pos in board.neighbours(x, y)
+        if can_walk_fn(board.get(*pos))
+    ]
+
+
 def find_paths(nodes, start, neighbours_fn):
     q = set(nodes)
     prev = dict()

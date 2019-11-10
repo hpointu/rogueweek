@@ -29,7 +29,7 @@ class Level:
     matrix: Matrix
     rooms: List[Room]
     start_room: int = 0
-    final_room: int = 0
+    final_rooms: List[int] = field(default_factory=list)
 
 
 @dataclass
@@ -54,6 +54,12 @@ class Board:
 
     def outside(self, x, y):
         return x < 0 or y < 0 or x >= self.side or y >= self.side
+
+    def to_pos(self, i):
+        return index_to_pos(i, self.side)
+
+    def to_index(self, x, y):
+        return pos_to_index(x, y, self.side)
 
     def neighbours(self, x, y):
         return [

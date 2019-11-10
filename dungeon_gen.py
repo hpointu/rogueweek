@@ -298,7 +298,8 @@ def create_board(level: Level):
     return clean_board(board)
 
 
-def pick_final_room(level: Level) -> Optional[int]:
+def pick_final_rooms(level: Level) -> Optional[int]:
+    rooms = []
     for i, room in enumerate(level.rooms):
         n = count_neighbours(level.matrix, i)
 
@@ -325,13 +326,13 @@ def pick_final_room(level: Level) -> Optional[int]:
         if top_size and top_size[1] >= MAX_ROOM_SIZE:
             continue
 
-        return i
+        rooms.append(i)
 
-    return None
+    return rooms
 
 
 def pick_starting_room(level: Level) -> int:
-    start = level.final_room
+    start = level.final_rooms[0]
     neighs = neighbours_map(level.matrix)
     paths = find_paths(range(len(level.rooms)), start, neighs.get)
 
@@ -340,7 +341,7 @@ def pick_starting_room(level: Level) -> int:
 
     far, d = start, 0
     for i in range(len(level.rooms)):
-        if i == start or level.rooms[i][0] == (1, 1):
+        if i in level.final_rooms or level.rooms[i][0] == (1, 1):
             continue
         di = distance(i)
         if di > d:
@@ -350,17 +351,18 @@ def pick_starting_room(level: Level) -> int:
     return far
 
 
-def generate_level(matrix: Matrix) -> Tuple[Level, Board]:
-    final_room = None
+def generate_level() -> Tuple[Level, Board]:
+    final_rooms = []
 
-    while final_room is None:
+    while len(final_rooms) < 3:
+        matrix = create_matrix()
         level = Level(
             matrix=matrix,
             rooms=[random_room(matrix, i) for i in range(M_SIZE * M_SIZE)],
         )
-        final_room = pick_final_room(level)
+        final_rooms = pick_final_rooms(level)
 
-    level.final_room = final_room
+    level.final_rooms = final_rooms
     level.start_room = pick_starting_room(level)
     board = create_board(level)
     return level, board

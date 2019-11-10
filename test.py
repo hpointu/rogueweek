@@ -258,7 +258,7 @@ def draw(state: State):
 
 
 def main():
-    level, m = generate_level(create_matrix())
+    level, m = generate_level()
     enemies = populate_enemies(level, m)
     # enemies = [Actor((2, 0))]
 
@@ -276,8 +276,17 @@ def main():
     # pyxel.run(partial(update, state), partial(draw, state))
 
     from debug import update_debug, draw_debug
-
-    pyxel.run(partial(update_debug, state), partial(draw_debug, state))
+    from dungeon_gen import room_anchor, is_wall
+    from graph import find_paths, extract_path, board_neighbours
+    from functools import partial
+    nodes = list(range(len(m.cells)))
+    start_room_pos = m.to_index(*room_anchor(level.start_room))
+    final_room_pos = m.to_index(*room_anchor(level.final_rooms[0]))
+    neighs = partial(board_neighbours, m, lambda v: not is_wall(v))
+    paths = find_paths(nodes, start_room_pos, neighs)
+    path = extract_path(paths, final_room_pos)
+    print(path)
+    pyxel.run(partial(update_debug, state), partial(draw_debug, state, path))
 
 
 if __name__ == "__main__":
