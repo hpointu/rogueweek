@@ -291,7 +291,7 @@ def create_board(level: Level):
     return clean_board(board)
 
 
-def pick_final_rooms(level: Level) -> Optional[int]:
+def pick_final_rooms(level: Level) -> List[int]:
     rooms = []
     for i, room in enumerate(level.rooms):
         n = count_neighbours(level.matrix, i)
@@ -345,7 +345,7 @@ def pick_starting_room(level: Level) -> int:
 
 
 def generate_level() -> Tuple[Level, Board]:
-    final_rooms = []
+    final_rooms: List[int] = []
 
     while len(final_rooms) < 3:
         matrix = create_matrix()

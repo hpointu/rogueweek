@@ -7,13 +7,15 @@ from rogue import debug
 
 from rogue.actions import end_turn, open_door
 from rogue.constants import CELL_SIZE, FPS
-from rogue.core import Board, State, Player
+from rogue.core import Board, State, Player, VecF
 from rogue.core import dist, index_to_pos, cast_ray
 
 from rogue.dungeon_gen import is_empty, is_wall, is_door, WALLS
 from rogue.dungeon_gen import generate_level, populate_enemies
 
 from rogue.particles import DamageText
+
+from typing import List
 
 
 def can_walk(board: Board, x, y) -> bool:
