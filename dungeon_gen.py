@@ -1,11 +1,11 @@
 import random
 from typing import List, Tuple, Optional
+from graph import neighbours_map, find_paths, extract_path
 
 from core import (
     index_to_pos,
     Board,
     Actor,
-    dist,
     pos_to_index,
     Level,
     Matrix,
@@ -332,19 +332,22 @@ def pick_final_room(level: Level) -> Optional[int]:
 
 def pick_starting_room(level: Level) -> int:
     start = level.final_room
+    neighs = neighbours_map(level.matrix)
+    paths = find_paths(range(len(level.rooms)), start, neighs.get)
 
-    p0 = index_to_pos(start, M_SIZE)
-    far, d = p0, 0
+    def distance(idx):
+        return len(extract_path(paths, idx))
+
+    far, d = start, 0
     for i in range(len(level.rooms)):
         if i == start or level.rooms[i][0] == (1, 1):
             continue
-        pi = index_to_pos(i, M_SIZE)
-        di = dist(p0, pi)
+        di = distance(i)
         if di > d:
-            far = pi
+            far = i
             d = di
 
-    return pos_to_index(*far, M_SIZE)
+    return far
 
 
 def generate_level(matrix: Matrix) -> Tuple[Level, Board]:

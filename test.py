@@ -259,9 +259,6 @@ def draw(state: State):
 
 def main():
     level, m = generate_level(create_matrix())
-
-    print(level.final_room)
-
     enemies = populate_enemies(level, m)
     # enemies = [Actor((2, 0))]
 
