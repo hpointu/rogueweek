@@ -1,7 +1,7 @@
 import pyxel
 
-from core import index_to_pos, State
-from dungeon_gen import M_SIZE, MAX_ROOM_SIZE, is_wall, is_door
+from rogue.core import index_to_pos, State
+from rogue.dungeon_gen import M_SIZE, MAX_ROOM_SIZE, is_wall, is_door
 
 U = 3
 OFF = 4
@@ -37,8 +37,8 @@ def draw_debug(state: State, *extras):
         else:
             col = 7
         pyxel.rect(x * U + OFF, y * U + OFF, U, U, col)
-        if i in extras[0]:
-            pyxel.pix(x * U + 1 + OFF, y * U + 1 + OFF, 9)
+        # if i in extras[0]:
+        #     pyxel.pix(x * U + 1 + OFF, y * U + 1 + OFF, 9)
 
     outline_room(state, state.level.start_room, 12)
     outline_room(state, state.level.final_rooms[0], 14)

@@ -1,34 +1,19 @@
-from functools import partial
-from typing import List
-
 import pyxel
 import random
 
-from constants import FPS, CELL_SIZE
+from functools import partial
 
-from core import (
-    Player,
-    VecF,
-    index_to_pos,
-    dist,
-    cast_ray,
-    State,
-)
+from rogue import debug
 
-from particles import Glitter, DamageText
+from rogue.actions import end_turn, open_door
+from rogue.constants import CELL_SIZE, FPS
+from rogue.core import Board, State, Player
+from rogue.core import dist, index_to_pos, cast_ray
 
-from actions import open_door, end_turn
+from rogue.dungeon_gen import is_empty, is_wall, is_door, WALLS
+from rogue.dungeon_gen import generate_level, populate_enemies
 
-from dungeon_gen import (
-    create_matrix,
-    Board,
-    generate_level,
-    populate_enemies,
-    WALLS,
-    is_door,
-    is_empty,
-    is_wall,
-)
+from rogue.particles import DamageText
 
 
 def can_walk(board: Board, x, y) -> bool:
@@ -150,8 +135,8 @@ def update(state: State) -> State:
         if dist(center, state.player.pos) < max_range * 2:
             state.in_range.add(i)
 
-    for i in range(3):
-        state.particles.append(Glitter(state.player.pos))
+    # for i in range(3):
+    #     state.particles.append(Glitter(state.player.pos))
 
     def ray_dirs(i):
         px, py = state.player.pos
@@ -184,10 +169,6 @@ def update(state: State) -> State:
             state.visible.add(hit)
 
     return state
-
-
-YES = (0, 32)
-NO = (8, 32)
 
 
 def draw(state: State):
@@ -257,36 +238,48 @@ def draw(state: State):
     pyxel.rectb(2, 2, 42, 8, 1)
 
 
-def main():
-    level, m = generate_level()
-    enemies = populate_enemies(level, m)
-    # enemies = [Actor((2, 0))]
+class App:
+    _debug: bool = False
 
-    spawn = 0, 0
-    state = State(
-        level=level,
-        board=m,
-        camera=(0, 0),
-        player=Player(spawn, 9000),
-        enemies=enemies,
-    )
-    state.particles = []
+    def __init__(self):
+        level, board = generate_level()
+        enemies = populate_enemies(level, board)
+
+        self.state = State(
+            level=level,
+            board=board,
+            camera=(0, 0),
+            player=Player((0, 0), 9000),
+            enemies=enemies,
+        )
+
+        self._draw = partial(draw, self.state)
+        self._draw_debug = partial(debug.draw_debug, self.state)
+
+        self._update = partial(update, self.state)
+        self._update_debug = partial(debug.update_debug, self.state)
+
+    def update(self):
+        if pyxel.btnr(pyxel.KEY_D):
+            self._debug = not self._debug
+
+        if self._debug:
+            self._update_debug()
+        else:
+            self._update()
+
+    def draw(self):
+        if self._debug:
+            self._draw_debug()
+        else:
+            self._draw()
+
+
+def main():
+    app = App()
     pyxel.init(128, 128)
     pyxel.load("my_resource.pyxres")
-    # pyxel.run(partial(update, state), partial(draw, state))
-
-    from debug import update_debug, draw_debug
-    from dungeon_gen import room_anchor, is_wall
-    from graph import find_paths, extract_path, board_neighbours
-    from functools import partial
-    nodes = list(range(len(m.cells)))
-    start_room_pos = m.to_index(*room_anchor(level.start_room))
-    final_room_pos = m.to_index(*room_anchor(level.final_rooms[0]))
-    neighs = partial(board_neighbours, m, lambda v: not is_wall(v))
-    paths = find_paths(nodes, start_room_pos, neighs)
-    path = extract_path(paths, final_room_pos)
-    print(path)
-    pyxel.run(partial(update_debug, state), partial(draw_debug, state, path))
+    pyxel.run(app.update, app.draw)
 
 
 if __name__ == "__main__":

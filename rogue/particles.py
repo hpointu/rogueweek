@@ -1,9 +1,9 @@
-import tween
 import random
 import pyxel
 
-from core import Particle, normalize
-from constants import CELL_SIZE
+from rogue import tween
+from rogue.core import Particle, normalize
+from rogue.constants import CELL_SIZE
 
 
 class DamageText(Particle):

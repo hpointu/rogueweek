@@ -1,8 +1,8 @@
 import random
 from typing import List, Tuple, Optional
-from graph import neighbours_map, find_paths, extract_path
+from rogue.graph import neighbours_map, find_paths, extract_path
 
-from core import (
+from rogue.core import (
     index_to_pos,
     Board,
     Actor,

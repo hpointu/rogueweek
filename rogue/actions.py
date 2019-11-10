@@ -1,6 +1,6 @@
-from core import State
-from core import pos_to_index
-from dungeon_gen import encode_floor, is_empty
+from rogue.core import State
+from rogue.core import pos_to_index
+from rogue.dungeon_gen import encode_floor, is_empty
 
 
 def end_turn(state: State, n: int = 1):

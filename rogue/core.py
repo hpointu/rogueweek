@@ -2,7 +2,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from math import sqrt
 from typing import List, Tuple, Any, Set
-import tween
+
+from rogue import tween
 
 GridCoord = Tuple[int, int]
 VecF = Tuple[float, float]
