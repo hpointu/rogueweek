@@ -184,16 +184,6 @@ def room_anchor(index: int) -> Position:
     return x, y
 
 
-def board_neigh(index):
-    x, y = index_to_pos(index, SIDE)
-
-    return [
-        y_ * SIDE + x_
-        for x_, y_ in [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)]
-        if 0 <= x_ < SIDE and 0 <= y_ < SIDE
-    ]
-
-
 def encode_wall(board: Board, index: int) -> int:
     val = 0b10000
 
@@ -274,7 +264,10 @@ def clean_board(board: Board) -> Board:
             board[i] = encode_wall(board, i)
         elif val == 2:
             # must happen after walls (top down)
-            n_neigh = sum(1 for k in board_neigh(i) if is_empty(board[k]))
+            x, y = board.to_pos(i)
+            n_neigh = sum(
+                1 for k in board.neighbours(x, y) if is_empty(board.get(*k))
+            )
             if n_neigh > 2:
                 board[i] = 0  # remove door
             else:
