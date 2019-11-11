@@ -49,6 +49,8 @@ def player_action(state: State, x, y):
     elif is_door(val):
         open_door(state, target)
         state.player.wait(FPS * 0.3, _end)
+    elif is_wall(val) or state.board.outside(*target):
+        state.player.bump_to(target, _end)
     else:
         state.player.wait(FPS * 0.3, _end)
 

@@ -5,6 +5,9 @@ from typing import List, Tuple, Any, Set
 
 from rogue import tween
 
+from rogue.constants import FPS
+
+
 GridCoord = Tuple[int, int]
 VecF = Tuple[float, float]
 
@@ -89,15 +92,26 @@ class Actor:
     def is_busy(self):
         return self._callback is not None
 
+
+    def bump_to(self, target, callback):
+        path = []
+        x, y = target
+        start = self.pos
+        end = (start[0] + x) / 2, (start[1] + y) / 2
+        path.extend(tween.tween(start, end, int(0.1 * FPS)))
+        path.extend(tween.tween(end, start, int(0.1 * FPS)))
+
+        self._action = self.do_move
+        self._callback = callback
+        self._path = path
+
     def update(self, state):
         self.sprite.update()
         if self._action:
             self._action()
 
     def attack(self, target, callback):
-        self._action = self.do_wait
-        self._callback = callback
-        self._path = int(0.3 * 30)  # TODO wait for now, will change sprite
+        self.bump_to(target.pos, callback)
         target.pv -= 2
         return 2
 
