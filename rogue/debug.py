@@ -1,7 +1,13 @@
 import pyxel
 
 from rogue.core import index_to_pos, State
-from rogue.dungeon_gen import M_SIZE, MAX_ROOM_SIZE, is_wall, is_door
+from rogue.dungeon_gen import (
+    M_SIZE,
+    MAX_ROOM_SIZE,
+    is_wall,
+    is_door,
+    is_locked,
+)
 
 U = 3
 OFF = 4
@@ -33,7 +39,12 @@ def draw_debug(state: State, *extras):
         if is_wall(v):
             col = 0
         elif is_door(v):
-            col = 8
+            if is_locked(v):
+                col = 8
+            else:
+                col = 13
+        elif state.board.entrance == i:
+            col = 12
         else:
             col = 7
         pyxel.rect(x * U + OFF, y * U + OFF, U, U, col)
@@ -42,5 +53,5 @@ def draw_debug(state: State, *extras):
 
     outline_room(state, state.level.start_room, 12)
     outline_room(state, state.level.final_rooms[0], 14)
-    outline_room(state, state.level.final_rooms[1], 3)
-    outline_room(state, state.level.final_rooms[2], 3)
+    for fr in state.level.final_rooms[1:]:
+        outline_room(state, fr, 3)

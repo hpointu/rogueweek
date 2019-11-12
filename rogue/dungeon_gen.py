@@ -1,11 +1,23 @@
+from functools import partial
 import random
 from typing import List, Tuple
-from rogue.graph import neighbours_map, find_paths, extract_path
+from rogue.graph import (
+    neighbours_map,
+    find_paths,
+    extract_path,
+    board_neighbours,
+)
 
+from rogue.core import (
+    is_door,
+    is_empty,
+    is_locked,
+    is_wall,
+)
 from rogue.core import (
     index_to_pos,
     Board,
-    Actor,
+    AIActor,
     pos_to_index,
     Level,
     Matrix,
@@ -14,30 +26,11 @@ from rogue.core import (
     Position,
 )
 
+from rogue.enemies import Slug, Skeleton, Ghost
+
 M_SIZE = 4
 MAX_ROOM_SIZE = 8
 SIDE = M_SIZE * MAX_ROOM_SIZE
-
-# 1TRBL
-WALLS = {
-    1: (8, 8),
-    10000: (24, 16),
-    10001: (40, 0),
-    10010: (24, 8),
-    10011: (16, 0),
-    10100: (24, 0),
-    10101: (32, 0),
-    10110: (0, 0),
-    10111: (8, 0),
-    11000: (40, 8),
-    11001: (16, 16),
-    11010: (32, 8),
-    11011: (16, 8),
-    11100: (0, 16),
-    11101: (8, 16),
-    11110: (0, 8),
-    11111: (8, 8),
-}
 
 
 def matrix_neighbours(index: int) -> List[int]:
@@ -244,18 +237,6 @@ def encode_door(board: Board, index: int) -> int:
     return 20
 
 
-def is_wall(val: int) -> bool:
-    return val in WALLS or val == 1
-
-
-def is_door(val: int) -> bool:
-    return val == 2 or 20 <= val < 30
-
-
-def is_empty(val: int) -> bool:
-    return val == 0 or 30 <= val < 40
-
-
 def clean_board(board: Board) -> Board:
 
     for i in range(len(board)):
@@ -344,6 +325,20 @@ def pick_starting_room(level: Level) -> int:
     return far
 
 
+def lock_door(board: Board, room_index: int) -> Board:
+    nodes = list(range(len(board)))
+    start = board.to_index(*room_anchor(room_index))
+    target = board.entrance
+    neighs = partial(board_neighbours, board, lambda x: not is_wall(x))
+    path = extract_path(find_paths(nodes, start, neighs), target)
+
+    for i in path:
+        if is_door(board[i]):
+            board[i] += 5
+            return board
+    return board
+
+
 def generate_level() -> Tuple[Level, Board]:
     final_rooms: List[int] = []
 
@@ -358,6 +353,12 @@ def generate_level() -> Tuple[Level, Board]:
     level.final_rooms = final_rooms
     level.start_room = pick_starting_room(level)
     board = create_board(level)
+
+    board.entrance = board.to_index(*room_anchor(level.start_room))
+
+    for r in final_rooms:
+        board = lock_door(board, r)
+
     return level, board
 
 
@@ -370,8 +371,8 @@ def populate_enemies(level: Level, board: Board):
         r = random.randint(0, 100)
 
         if r > 98:
-            spid = random.choice([9001, 9002, 9003])
-            e = Actor(index_to_pos(i, board.side), spid)
+            enemy_cls = random.choice([Ghost, Skeleton, Slug])
+            e = enemy_cls(index_to_pos(i, board.side))
             e.pv = 4
             e.sprite.play()
             enemies.append(e)

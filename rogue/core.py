@@ -1,11 +1,12 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from math import sqrt
-from typing import List, Tuple, Any, Set
+from typing import List, Tuple, Any, Set, Optional
 
 from rogue import tween
 
 from rogue.constants import FPS
+from rogue.sprites import WALLS
 
 
 GridCoord = Tuple[int, int]
@@ -27,6 +28,8 @@ Size = Tuple[int, int]
 Position = Tuple[int, int]
 Room = Tuple[Size, Position]
 
+ActionReport = Optional[int]
+
 
 @dataclass
 class Level:
@@ -40,6 +43,7 @@ class Level:
 class Board:
     cells: List[int]
     side: int
+    entrance: int = 0
 
     def set(self, x, y, val):
         self.cells[int(y) * self.side + int(x)] = val
@@ -92,7 +96,6 @@ class Actor:
     def is_busy(self):
         return self._callback is not None
 
-
     def bump_to(self, target, callback):
         path = []
         x, y = target
@@ -115,7 +118,7 @@ class Actor:
         target.pv -= 2
         return 2
 
-    def move(self, x, y, callback, frames=int(30 * 0.3)):
+    def move(self, x, y, callback, frames=int(FPS * 0.3)):
         self._action = self.do_move
         self._callback = callback
         self._path = list(tween.tween(self.pos, (x, y), frames))
@@ -161,6 +164,12 @@ class Player(Actor):
         self.sprite.stop()
 
 
+class AIActor(Actor):
+    def take_action(self, state: State, end_turn) -> ActionReport:
+        end_turn(self)
+        return None
+
+
 @dataclass
 class AnimSprite:
     count: int
@@ -195,7 +204,7 @@ class State:
     level: Level
     board: Board
     camera: Tuple[float, float]
-    enemies: List[Actor] = field(default_factory=list)
+    enemies: List[AIActor] = field(default_factory=list)
     in_range: Set[Any] = field(default_factory=set)
     visible: Set[GridCoord] = field(default_factory=set)
     particles: List[Particle] = field(default_factory=list)
@@ -219,6 +228,22 @@ class Particle:
 
     def living(self) -> bool:
         raise NotImplementedError
+
+
+def is_wall(val: int) -> bool:
+    return val in WALLS or val == 1
+
+
+def is_door(val: int) -> bool:
+    return val == 2 or 20 <= val < 30
+
+
+def is_locked(val: int) -> bool:
+    return 25 <= val < 30
+
+
+def is_empty(val: int) -> bool:
+    return val == 0 or 30 <= val < 40
 
 
 def index_to_pos(index: int, width: int) -> GridCoord:

@@ -6,14 +6,17 @@ from functools import partial
 from rogue import debug
 
 from rogue.actions import end_turn, open_door
-from rogue.constants import CELL_SIZE, FPS
+
 from rogue.core import Board, State, Player, VecF
 from rogue.core import dist, index_to_pos, cast_ray
+from rogue.core import is_empty, is_wall, is_door
 
-from rogue.dungeon_gen import is_empty, is_wall, is_door, WALLS
 from rogue.dungeon_gen import generate_level, populate_enemies
 
 from rogue.particles import DamageText
+
+from rogue.constants import CELL_SIZE, FPS
+from rogue.sprites import WALLS
 
 from typing import List
 
@@ -60,28 +63,11 @@ def game_turn(state: State):
         return
     _end = end_turn(state, len(state.enemies))
     for e in state.enemies:
-        possible = [
-            n
-            for n in state.board.neighbours(*e.pos)
-            if can_walk(state.board, *n)
-        ]
-        if e.square in state.visible:
-            possible = sorted(
-                possible, key=lambda x: dist(x, state.player.square)
-            )
-            if possible[0] == state.player.square:
-                a = e.attack(state.player, _end)
-                ppos = state.to_pixel(state.player.pos, CELL_SIZE)
-                state.particles.append(DamageText(f"-{a}", ppos, 8))
-            else:
-                x, y = possible[0]
-                e.move(x, y, _end)
-        else:
-            if possible:
-                x, y = random.choice(possible)
-                e.move(x, y, _end, 1)
-            else:
-                e.wait(10, _end)
+        # Only damage report, so far. Might add more reporting
+        report = e.take_action(state, _end)
+        if report is not None:
+            ppos = state.to_pixel(state.player.pos, CELL_SIZE)
+            state.particles.append(DamageText(f"-{report}", ppos, 8))
 
 
 def update(state: State) -> State:
@@ -190,6 +176,10 @@ def draw(state: State):
         21: (56, 16),
         22: (56, 8),
         23: (56, 0),
+        25: (64, 0),
+        26: (72, 16),
+        27: (72, 8),
+        28: (72, 0),
     }
 
     # draw in range
@@ -253,7 +243,7 @@ class App:
             level=level,
             board=board,
             camera=(0, 0),
-            player=Player((0, 0), 9000),
+            player=Player(board.to_pos(board.entrance), 9000),
             enemies=enemies,
         )
 
