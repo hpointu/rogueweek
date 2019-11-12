@@ -1,5 +1,6 @@
 import random
 
+from rogue.constants import FPS
 from rogue.core import is_empty, dist
 from rogue.core import AIActor, ActionReport, State, Board
 
@@ -28,13 +29,28 @@ def straight_line(state: State, e: AIActor, end_turn) -> ActionReport:
     return None
 
 
+def random_move(state: State, e: AIActor, end_turn) -> ActionReport:
+    possible = [
+        n for n in state.board.neighbours(*e.pos) if can_walk(state.board, *n)
+    ]
+
+    if state.player.square in possible:
+        return e.attack(state.player, end_turn)
+
+    speed = int(0.3 * FPS) if e.square in state.visible else 1
+    x, y = random.choice(possible)
+    e.move(x, y, end_turn, speed)
+
+    return None
+
+
+
 class Slug(AIActor):
     def __init__(self, pos):
         super().__init__(pos, 9001)
 
-    # TODO Slug will only move random
     def take_action(self, state: State, end_turn_fn) -> ActionReport:
-        return straight_line(state, self, end_turn_fn)
+        return random_move(state, self, end_turn_fn)
 
 
 class Ghost(AIActor):
