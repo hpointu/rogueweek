@@ -7,7 +7,7 @@ from rogue import debug
 
 from rogue.actions import end_turn, open_door
 
-from rogue.core import ITEMS
+from rogue.core import ITEMS, LevelItem
 from rogue.core import Board, State, Player, VecF
 from rogue.core import dist, index_to_pos, cast_ray
 from rogue.core import is_empty, is_wall, is_door
@@ -19,7 +19,7 @@ from rogue.particles import DamageText
 from rogue.constants import CELL_SIZE, FPS
 from rogue.sprites import WALLS
 
-from typing import List
+from typing import List, Optional
 
 
 def can_walk(board: Board, x, y) -> bool:
@@ -33,6 +33,13 @@ def find_entity(state, x, y):
     return None
 
 
+def find_item(state, x, y) -> Optional[LevelItem]:
+    for i in state.level.items:
+        if i.square == (x, y):
+            return i
+    return None
+
+
 def player_action(state: State, x, y):
     if state.player.is_busy():
         return
@@ -40,6 +47,7 @@ def player_action(state: State, x, y):
     target = x, y
     val = state.board.get(*target)
     entity = find_entity(state, *target)
+    item = find_item(state, *target)
     _end = end_turn(state)
 
     if entity:
@@ -48,6 +56,9 @@ def player_action(state: State, x, y):
         a = state.player.attack(entity, _end)
         ppos = state.to_pixel(entity.pos, CELL_SIZE)
         state.particles.append(DamageText(f"-{a}", ppos, 12))
+    elif item:
+        item.interact(state)
+        state.player.wait(FPS * 0.3, _end)
     elif can_walk(state.board, *target):
         state.player.move(*target, _end)
     elif is_door(val):
