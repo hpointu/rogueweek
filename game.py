@@ -198,6 +198,8 @@ def draw(state: State):
 
     # draw collectibles and stuff
     for item in state.level.items:
+        if item.square not in state.visible:
+            continue
         x, y = state.to_cam_space(item.square)
         pyxel.blt(x * CELL_SIZE, y * CELL_SIZE, 0, *item.sprite)
 
