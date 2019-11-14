@@ -365,9 +365,6 @@ def generate_level() -> Tuple[Level, Board]:
 
     board.entrance = board.to_index(*room_anchor(level.start_room))
 
-    for r in final_rooms:
-        board = amend_door(board, r, lock_door)
-
     return level, board
 
 
@@ -397,8 +394,8 @@ def square_from_room(level: Level, room_index):
 
 
 def basic_scenario(level: Level, board: Board) -> Tuple[Level, Board]:
-    board = amend_door(board, 1, lock_door)
-    board = amend_door(board, 2, lock_door)
+    for r in level.final_rooms:
+        board = amend_door(board, r, lock_door)
 
     rooms = random.choices(
         [

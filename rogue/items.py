@@ -1,9 +1,11 @@
+import pyxel
 from functools import partial
 from rogue.core import LevelItem, State, Player
 
 
 def _add_key(player: Player) -> Player:
     player.keys += 1
+    pyxel.play(3, 52)
     return player
 
 

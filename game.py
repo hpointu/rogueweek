@@ -54,6 +54,7 @@ def player_action(state: State, x, y):
         # interact with an other entity
         # TODO assume it's an enemy for now, will change
         a = state.player.attack(entity, _end)
+        pyxel.play(3, 50)
         ppos = state.to_pixel(entity.pos, CELL_SIZE)
         state.particles.append(DamageText(f"-{a}", ppos, 12))
     elif item:
@@ -63,6 +64,7 @@ def player_action(state: State, x, y):
         state.player.move(*target, _end)
     elif is_door(val):
         open_door(state, target)
+        pyxel.play(3, 49)
         state.player.wait(FPS * 0.3, _end)
     elif is_wall(val) or state.board.outside(*target):
         state.player.bump_to(target, _end)
@@ -78,6 +80,7 @@ def game_turn(state: State):
         # Only damage report, so far. Might add more reporting
         report = e.take_action(state, _end)
         if report is not None:
+            pyxel.play(3, 51)
             ppos = state.to_pixel(state.player.pos, CELL_SIZE)
             state.particles.append(DamageText(f"-{report}", ppos, 8))
 
@@ -276,6 +279,12 @@ class App:
         self._update = partial(update, self.state)
         self._update_debug = partial(debug.update_debug, self.state)
 
+    def run(self):
+        pyxel.init(128, 128)
+        pyxel.load("my_resource.pyxres")
+        pyxel.playm(0, loop=True)
+        pyxel.run(self.update, self.draw)
+
     def update(self):
         if pyxel.btnr(pyxel.KEY_D):
             self._debug = not self._debug
@@ -294,9 +303,7 @@ class App:
 
 def main():
     app = App()
-    pyxel.init(128, 128)
-    pyxel.load("my_resource.pyxres")
-    pyxel.run(app.update, app.draw)
+    app.run()
 
 
 if __name__ == "__main__":
