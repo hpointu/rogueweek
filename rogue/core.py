@@ -22,6 +22,10 @@ ANIMATED = {
     9003: (2, [(0, 56), (8, 56)], (0, 0), 12),
 }
 
+ITEMS = {
+    'chest': (48, 16, 8, 8, 0),
+}
+
 MPath = Tuple[int, int]
 Matrix = List[MPath]
 Size = Tuple[int, int]
@@ -32,11 +36,24 @@ ActionReport = Optional[int]
 
 
 @dataclass
+class LevelItem:
+    square: Tuple[int, int]
+    sprite_id: int = 0
+
+    def interact(self, state: State):
+        pass
+
+    @property
+    def sprite(self):
+        return ITEMS[self.sprite_id]
+
+@dataclass
 class Level:
     matrix: Matrix
     rooms: List[Room]
     start_room: int = 0
     final_rooms: List[int] = field(default_factory=list)
+    items: List[LevelItem] = field(default_factory=list)
 
 
 @dataclass
@@ -87,6 +104,7 @@ class Actor:
         self._path = None
         self._callback = None
         self.sprite = AnimSprite(*ANIMATED[sprite_id])
+        self.flags = set()
 
     @property
     def square(self) -> GridCoord:
@@ -146,6 +164,10 @@ class Actor:
 
 
 class Player(Actor):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.keys = 3
+
     def move(self, *a, **kw):
         super().move(*a, **kw)
         self.sprite.play()

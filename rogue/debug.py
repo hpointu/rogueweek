@@ -51,6 +51,10 @@ def draw_debug(state: State, *extras):
         # if i in extras[0]:
         #     pyxel.pix(x * U + 1 + OFF, y * U + 1 + OFF, 9)
 
+    for i in state.level.items:
+        x, y = i.square
+        pyxel.rect(x * U + OFF, y * U + 1 + OFF, U, U, 9)
+
     outline_room(state, state.level.start_room, 12)
     outline_room(state, state.level.final_rooms[0], 14)
     for fr in state.level.final_rooms[1:]:

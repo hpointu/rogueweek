@@ -11,7 +11,7 @@ from rogue.core import Board, State, Player, VecF
 from rogue.core import dist, index_to_pos, cast_ray
 from rogue.core import is_empty, is_wall, is_door
 
-from rogue.dungeon_gen import generate_level, populate_enemies
+from rogue.dungeon_gen import generate_level, populate_enemies, basic_scenario
 
 from rogue.particles import DamageText
 
@@ -196,6 +196,11 @@ def draw(state: State):
             x * CELL_SIZE, y * CELL_SIZE, 0, u_, v_, CELL_SIZE, CELL_SIZE
         )
 
+    # draw collectibles and stuff
+    for item in state.level.items:
+        x, y = state.to_cam_space(item.square)
+        pyxel.blt(x * CELL_SIZE, y * CELL_SIZE, 0, *item.sprite)
+
     x, y = state.to_cam_space(state.player.pos)
     sp = state.player.sprite
     pyxel.blt(
@@ -236,7 +241,7 @@ class App:
     _debug: bool = False
 
     def __init__(self):
-        level, board = generate_level()
+        level, board = basic_scenario(*generate_level())
         enemies = populate_enemies(level, board)
 
         self.state = State(

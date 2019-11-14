@@ -1,6 +1,7 @@
 from functools import partial
 import random
 from typing import List, Tuple
+from rogue.items import Chest, ADD_KEY
 from rogue.graph import (
     neighbours_map,
     find_paths,
@@ -325,7 +326,15 @@ def pick_starting_room(level: Level) -> int:
     return far
 
 
-def lock_door(board: Board, room_index: int) -> Board:
+def lock_door(val):
+    return val + 5
+
+
+def dig_door(val):
+    return val + 5
+
+
+def amend_door(board: Board, room_index: int, door_fn) -> Board:
     nodes = list(range(len(board)))
     start = board.to_index(*room_anchor(room_index))
     target = board.entrance
@@ -334,7 +343,7 @@ def lock_door(board: Board, room_index: int) -> Board:
 
     for i in path:
         if is_door(board[i]):
-            board[i] += 5
+            board[i] = door_fn(board[i])
             return board
     return board
 
@@ -357,7 +366,7 @@ def generate_level() -> Tuple[Level, Board]:
     board.entrance = board.to_index(*room_anchor(level.start_room))
 
     for r in final_rooms:
-        board = lock_door(board, r)
+        board = amend_door(board, r, lock_door)
 
     return level, board
 
@@ -378,3 +387,34 @@ def populate_enemies(level: Level, board: Board):
             enemies.append(e)
 
     return enemies
+
+
+def square_from_room(level: Level, room_index):
+    x = random.randrange(1, level.rooms[room_index][0][0] - 2)
+    y = random.randrange(1, level.rooms[room_index][0][1] - 2)
+    ox, oy = room_anchor(room_index)
+    return ox + x, oy + y
+
+
+def basic_scenario(level: Level, board: Board) -> Tuple[Level, Board]:
+    board = amend_door(board, 1, lock_door)
+    board = amend_door(board, 2, lock_door)
+
+    rooms = random.choices(
+        [
+            i
+            for i in range(len(level.rooms))
+            if i not in level.final_rooms
+            and level.rooms[i][0][0] > 3
+            and level.rooms[i][0][1] > 3
+        ],
+        k=2,
+    )
+    level.items.append(
+        Chest(ADD_KEY, square=square_from_room(level, rooms[0]))
+    )
+    level.items.append(
+        Chest(ADD_KEY, square=square_from_room(level, rooms[1]))
+    )
+
+    return level, board
