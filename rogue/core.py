@@ -24,6 +24,7 @@ ANIMATED = {
 
 ITEMS = {
     'chest': (48, 16, 8, 8, 0),
+    'key': (80, 8, 8, 8, 1),
 }
 
 MPath = Tuple[int, int]
@@ -166,7 +167,7 @@ class Actor:
 class Player(Actor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.keys = 3
+        self.keys = 0
 
     def move(self, *a, **kw):
         super().move(*a, **kw)

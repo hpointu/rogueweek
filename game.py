@@ -7,6 +7,7 @@ from rogue import debug
 
 from rogue.actions import end_turn, open_door
 
+from rogue.core import ITEMS
 from rogue.core import Board, State, Player, VecF
 from rogue.core import dist, index_to_pos, cast_ray
 from rogue.core import is_empty, is_wall, is_door
@@ -233,10 +234,14 @@ def draw(state: State):
     for p in state.particles:
         p.draw(state)
 
+    # HUD
     pyxel.rect(3, 3, 2 * state.player.pv, 7, 2)
     pyxel.rect(3, 3, 2 * state.player.pv, 5, 8)
     pyxel.rect(4, 4, 2 * state.player.pv - 2, 1, 14)
     pyxel.rectb(2, 2, 42, 8, 1)
+
+    for i in range(state.player.keys):
+        pyxel.blt(3 + i * 7, 12, 0, *ITEMS['key'])
 
 
 class App:
