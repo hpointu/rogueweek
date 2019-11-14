@@ -14,6 +14,12 @@ def end_turn(state: State, n: int = 1):
     return _do
 
 
+def unlock_door(state, target):
+    val = state.board.get(*target)
+    state.player.keys -= 1
+    state.board.set(*target, val - 5)
+
+
 def open_door(state, target):
     # remove door
     state.board.set(*target, 0)

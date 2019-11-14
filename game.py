@@ -5,12 +5,12 @@ from functools import partial
 
 from rogue import debug
 
-from rogue.actions import end_turn, open_door
+from rogue.actions import end_turn, open_door, unlock_door
 
 from rogue.core import ITEMS, LevelItem
 from rogue.core import Board, State, Player, VecF
 from rogue.core import dist, index_to_pos, cast_ray
-from rogue.core import is_empty, is_wall, is_door
+from rogue.core import is_empty, is_wall, is_door, is_locked
 
 from rogue.dungeon_gen import generate_level, populate_enemies, basic_scenario
 
@@ -63,8 +63,15 @@ def player_action(state: State, x, y):
     elif can_walk(state.board, *target):
         state.player.move(*target, _end)
     elif is_door(val):
-        open_door(state, target)
-        pyxel.play(3, 49)
+        if is_locked(state.board.get(*target)):
+            if state.player.keys:
+                unlock_door(state, target)
+                pyxel.play(3, 53)
+            else:
+                pyxel.play(3, 54)
+        else:
+            open_door(state, target)
+            pyxel.play(3, 49)
         state.player.wait(FPS * 0.3, _end)
     elif is_wall(val) or state.board.outside(*target):
         state.player.bump_to(target, _end)
