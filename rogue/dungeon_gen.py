@@ -357,7 +357,7 @@ def generate_level() -> Tuple[Level, Board]:
             matrix=matrix,
             rooms=[random_room(matrix, i) for i in range(M_SIZE * M_SIZE)],
         )
-        final_rooms = pick_final_rooms(level)
+        final_rooms = pick_final_rooms(level)[:3]
 
     level.final_rooms = final_rooms
     level.start_room = pick_starting_room(level)
