@@ -25,6 +25,8 @@ ANIMATED = {
 ITEMS = {
     'chest': (48, 16, 8, 8, 0),
     'key': (80, 8, 8, 8, 1),
+    'select': (112, 0, 8, 8, 0),
+    'flare': (112, 8, 8, 8, 0),
 }
 
 MPath = Tuple[int, int]
@@ -137,6 +139,11 @@ class Actor:
         target.pv -= 2
         return 2
 
+    def shoot(self, target, callback):
+        damage = 1
+        target.pv -= damage
+        return damage
+
     def move(self, x, y, callback, frames=int(FPS * 0.3)):
         self._action = self.do_move
         self._callback = callback
@@ -232,6 +239,7 @@ class State:
     visible: Set[GridCoord] = field(default_factory=set)
     particles: List[Particle] = field(default_factory=list)
     player_turn: bool = True
+    aim: List[Actor] = field(default_factory=list)
 
     def to_cam_space(self, pos: Tuple[float, float]):
         px, py = pos

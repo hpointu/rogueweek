@@ -14,12 +14,38 @@ from rogue.core import is_empty, is_wall, is_door, is_locked
 
 from rogue.dungeon_gen import generate_level, populate_enemies, basic_scenario
 
-from rogue.particles import DamageText
+from rogue.particles import DamageText, Projectile
 
 from rogue.constants import CELL_SIZE, FPS
 from rogue.sprites import WALLS
 
 from typing import List, Optional
+
+
+class KeyReg:
+
+    _managed = [
+        pyxel.KEY_LEFT,
+        pyxel.KEY_RIGHT,
+    ]
+
+    def __init__(self):
+        self._reg = {k: False for k in self._managed}
+        self.clear_queue()
+
+    def clear_queue(self):
+        self.queue = list()
+
+    def update(self):
+        for k in self._managed:
+            if pyxel.btn(k) and not self._reg[k]:
+                self._reg[k] = True
+                print(f"{k} pressed")
+
+            if not pyxel.btn(k) and self._reg[k]:
+                self._reg[k] = False
+                print(f"{k} released")
+                self.queue.append(k)
 
 
 def can_walk(board: Board, x, y) -> bool:
@@ -40,23 +66,70 @@ def find_item(state, x, y) -> Optional[LevelItem]:
     return None
 
 
-def player_action(state: State, x, y):
+def can_shoot(state) -> bool:
+    return 'wand' in state.player.flags
+
+
+def draw_damage(state, pos, damage, color):
+    ppos = state.to_pixel(pos, CELL_SIZE)
+    state.particles.append(DamageText(f"-{damage}", ppos, color))
+
+
+def player_shooting(state: State):
+    aim = state.aim
+
+    if pyxel.btnr(pyxel.KEY_LEFT):
+        state.aim = aim[-1:] + aim[:-1]
+    elif pyxel.btnr(pyxel.KEY_RIGHT):
+        state.aim = aim[1:] + aim[:1]
+
+    return
+
+
+def apply_damage(state, entity, damage, source):
+    entity.pv -= damage
+    draw_damage(state, entity.pos, damage, 12)
+    state.aim = list()
+    end_turn(state)(source)
+
+
+def player_action(state: State):
     if state.player.is_busy():
         return
 
-    target = x, y
+    x, y = state.player.square
+    _end = end_turn(state)
+
+    if pyxel.btnr(pyxel.KEY_C):
+        if state.aim:
+            e = state.aim[0]
+            fn = partial(apply_damage, state, e, 1)
+            state.particles.append(Projectile(state.player.pos, e.pos, fn))
+
+        else:
+            state.aim = [e for e in state.enemies if e.square in state.visible]
+
+    if state.aim:
+        return player_shooting(state)
+    elif pyxel.btn(pyxel.KEY_DOWN):
+        target = x, y + 1
+    elif pyxel.btn(pyxel.KEY_UP):
+        target = x, y - 1
+    elif pyxel.btn(pyxel.KEY_LEFT):
+        target = x - 1, y
+    elif pyxel.btn(pyxel.KEY_RIGHT):
+        target = x + 1, y
+    else:
+        return
+
     val = state.board.get(*target)
     entity = find_entity(state, *target)
     item = find_item(state, *target)
-    _end = end_turn(state)
 
     if entity:
-        # interact with an other entity
-        # TODO assume it's an enemy for now, will change
         a = state.player.attack(entity, _end)
         pyxel.play(3, 50)
-        ppos = state.to_pixel(entity.pos, CELL_SIZE)
-        state.particles.append(DamageText(f"-{a}", ppos, 12))
+        draw_damage(state, entity.pos, a, 12)
     elif item:
         item.interact(state)
         state.player.wait(FPS * 0.3, _end)
@@ -88,24 +161,14 @@ def game_turn(state: State):
         report = e.take_action(state, _end)
         if report is not None:
             pyxel.play(3, 51)
-            ppos = state.to_pixel(state.player.pos, CELL_SIZE)
-            state.particles.append(DamageText(f"-{report}", ppos, 8))
+            draw_damage(state, state.player.pos, report, 8)
 
 
 def update(state: State) -> State:
     x, y = state.player.pos
 
     if state.player_turn:
-        if pyxel.btn(pyxel.KEY_DOWN):
-            player_action(state, x, y + 1)
-        elif pyxel.btn(pyxel.KEY_UP):
-            player_action(state, x, y - 1)
-        elif pyxel.btn(pyxel.KEY_LEFT):
-            player_action(state, x - 1, y)
-            state.player.orientation = -1
-        elif pyxel.btn(pyxel.KEY_RIGHT):
-            player_action(state, x + 1, y)
-            state.player.orientation = 1
+        player_action(state)
     else:
         game_turn(state)
 
@@ -254,6 +317,10 @@ def draw(state: State):
 
     for p in state.particles:
         p.draw(state)
+
+    if state.aim:
+        x, y = state.to_cam_space(state.aim[0].square)
+        pyxel.blt(x * CELL_SIZE, y * CELL_SIZE + CELL_SIZE, 0, *ITEMS['select'])
 
     # HUD
     pyxel.rect(3, 3, 2 * state.player.pv, 7, 2)
