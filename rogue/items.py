@@ -11,11 +11,13 @@ def _add_key(player: Player) -> Player:
 
 def _add_flag(flag: str, player: Player) -> Player:
     player.flags.add(flag)
+    pyxel.play(3, 52)
     return player
 
 
 ADD_KEY = _add_key
-TELEPORT_SPELL = partial(_add_flag, 'teleport')
+TELEPORT_SPELL = partial(_add_flag, "teleport")
+MAGIC_WAND = partial(_add_flag, "wand")
 
 
 class Chest(LevelItem):

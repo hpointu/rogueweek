@@ -1,7 +1,7 @@
 from functools import partial
 import random
 from typing import List, Tuple
-from rogue.items import Chest, ADD_KEY
+from rogue.items import Chest, ADD_KEY, MAGIC_WAND, TELEPORT_SPELL
 from rogue.graph import (
     neighbours_map,
     find_paths,
@@ -331,7 +331,7 @@ def lock_door(val):
 
 
 def dig_door(val):
-    return val + 5
+    return val + 20
 
 
 def amend_door(board: Board, room_index: int, door_fn) -> Board:
@@ -344,7 +344,17 @@ def amend_door(board: Board, room_index: int, door_fn) -> Board:
     for i in path:
         if is_door(board[i]):
             board[i] = door_fn(board[i])
+
+            botx, boty = board.to_pos(i)
+            boty += 1
+            # might rencode floor below
+            if is_empty(board.get(botx, boty)):
+                i = board.to_index(botx, boty)
+                floor = encode_floor(board, i)
+                board.set(botx, boty, floor)
+
             return board
+
     return board
 
 
@@ -394,7 +404,8 @@ def square_from_room(level: Level, room_index):
 
 
 def basic_scenario(level: Level, board: Board) -> Tuple[Level, Board]:
-    for r in level.final_rooms:
+    board = amend_door(board, level.final_rooms[0], dig_door)
+    for r in level.final_rooms[1:]:
         board = amend_door(board, r, lock_door)
 
     rooms = random.choices(
@@ -412,6 +423,14 @@ def basic_scenario(level: Level, board: Board) -> Tuple[Level, Board]:
     )
     level.items.append(
         Chest(ADD_KEY, square=square_from_room(level, rooms[1]))
+    )
+
+    final_rooms = level.final_rooms
+    level.items.append(
+        Chest(MAGIC_WAND, square=square_from_room(level, final_rooms[1]))
+    )
+    level.items.append(
+        Chest(TELEPORT_SPELL, square=square_from_room(level, final_rooms[2]))
     )
 
     return level, board

@@ -27,6 +27,8 @@ ITEMS = {
     'key': (80, 8, 8, 8, 1),
     'select': (112, 0, 8, 8, 0),
     'flare': (112, 8, 8, 8, 0),
+    'wand': (80, 24, 8, 8, 1),
+    'teleport': (88, 8, 8, 8, 1),
 }
 
 MPath = Tuple[int, int]

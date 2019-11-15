@@ -43,6 +43,8 @@ def draw_debug(state: State, *extras):
                 col = 8
             else:
                 col = 13
+        elif 40 <= v <45:
+            col = 1
         elif state.board.entrance == i:
             col = 12
         else:

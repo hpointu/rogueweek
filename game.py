@@ -67,7 +67,7 @@ def find_item(state, x, y) -> Optional[LevelItem]:
 
 
 def can_shoot(state) -> bool:
-    return 'wand' in state.player.flags
+    return "wand" in state.player.flags
 
 
 def draw_damage(state, pos, damage, color):
@@ -80,8 +80,10 @@ def player_shooting(state: State):
 
     if pyxel.btnr(pyxel.KEY_LEFT):
         state.aim = aim[-1:] + aim[:-1]
+        pyxel.play(3, 55)
     elif pyxel.btnr(pyxel.KEY_RIGHT):
         state.aim = aim[1:] + aim[:1]
+        pyxel.play(3, 55)
 
     return
 
@@ -89,6 +91,7 @@ def player_shooting(state: State):
 def apply_damage(state, entity, damage, source):
     entity.pv -= damage
     draw_damage(state, entity.pos, damage, 12)
+    pyxel.play(2, 50)
     state.aim = list()
     end_turn(state)(source)
 
@@ -100,14 +103,18 @@ def player_action(state: State):
     x, y = state.player.square
     _end = end_turn(state)
 
-    if pyxel.btnr(pyxel.KEY_C):
+    if can_shoot(state) and pyxel.btnr(pyxel.KEY_C):
         if state.aim:
             e = state.aim[0]
             fn = partial(apply_damage, state, e, 1)
             state.particles.append(Projectile(state.player.pos, e.pos, fn))
+            pyxel.play(3, 56)
 
         else:
-            state.aim = [e for e in state.enemies if e.square in state.visible]
+            state.aim = sorted(
+                [e for e in state.enemies if e.square in state.visible],
+                key=lambda x: x.pos[0],
+            )
 
     if state.aim:
         return player_shooting(state)
@@ -178,7 +185,7 @@ def update(state: State) -> State:
     px, py = state.player.pos
     cx, cy = state.camera
     lthreshold = 6
-    rthreshold = 10
+    rthreshold = 9
     cx = px - lthreshold if px - cx < lthreshold else cx
     cx = px - rthreshold if px - cx > rthreshold else cx
     cy = py - lthreshold if py - cy < lthreshold else cy
@@ -257,6 +264,10 @@ def draw(state: State):
         33: (16, 24),
         34: (40, 16),
         35: (48, 8),
+        40: (40, 32),
+        41: (32, 32),
+        42: (32, 32),
+        43: (32, 32),
         20: (48, 0),
         21: (56, 16),
         22: (56, 8),
@@ -320,7 +331,9 @@ def draw(state: State):
 
     if state.aim:
         x, y = state.to_cam_space(state.aim[0].square)
-        pyxel.blt(x * CELL_SIZE, y * CELL_SIZE + CELL_SIZE, 0, *ITEMS['select'])
+        pyxel.blt(
+            x * CELL_SIZE, y * CELL_SIZE + CELL_SIZE, 0, *ITEMS["select"]
+        )
 
     # HUD
     pyxel.rect(3, 3, 2 * state.player.pv, 7, 2)
@@ -329,7 +342,11 @@ def draw(state: State):
     pyxel.rectb(2, 2, 42, 8, 1)
 
     for i in range(state.player.keys):
-        pyxel.blt(3 + i * 7, 12, 0, *ITEMS['key'])
+        pyxel.blt(3 + i * 7, 12, 0, *ITEMS["key"])
+
+    for i, flag in enumerate(["wand", "teleport"]):
+        if flag in state.player.flags:
+            pyxel.blt(3 + i * 8, 20, 0, *ITEMS[flag])
 
 
 class App:
