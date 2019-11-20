@@ -20,6 +20,7 @@ ANIMATED = {
     9001: (2, [(0, 40), (8, 40)], (0, -2), 10),
     9002: (2, [(0, 48), (8, 48)], (0, 0), 11),
     9003: (2, [(0, 56), (8, 56)], (0, 0), 12),
+    9010: (1, [(48, 40)], (0, 0), 10),
 }
 
 ITEMS = {
@@ -177,10 +178,16 @@ class Player(Actor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.keys = 0
+        self._base_sprite = self.sprite
+        self._teleport_sprite = AnimSprite(*ANIMATED[9010])
 
     def move(self, *a, **kw):
         super().move(*a, **kw)
         self.sprite.play()
+
+    def teleport(self, *a, **kw):
+        self.sprite = self._teleport_sprite
+        self.move(*a, **kw)
 
     def wait(self, *a, **kw):
         super().wait(*a, **kw)
@@ -194,6 +201,7 @@ class Player(Actor):
     def end_turn(self):
         super().end_turn()
         self.sprite.stop()
+        self.sprite = self._base_sprite
 
 
 class AIActor(Actor):
@@ -254,10 +262,10 @@ class State:
 
 class Particle:
     def draw(self, state: State):
-        raise NotImplementedError
+        pass
 
     def update(self, state: State):
-        raise NotImplementedError
+        pass
 
     def living(self) -> bool:
         raise NotImplementedError
@@ -277,6 +285,10 @@ def is_locked(val: int) -> bool:
 
 def is_empty(val: int) -> bool:
     return val == 0 or 30 <= val < 40
+
+
+def is_hole(val: int) -> bool:
+    return 40 <= val < 45
 
 
 def index_to_pos(index: int, width: int) -> GridCoord:

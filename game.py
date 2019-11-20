@@ -10,16 +10,25 @@ from rogue.actions import end_turn, open_door, unlock_door
 from rogue.core import ITEMS, LevelItem
 from rogue.core import Board, State, Player, VecF
 from rogue.core import dist, index_to_pos, cast_ray
-from rogue.core import is_empty, is_wall, is_door, is_locked
+from rogue.core import is_empty, is_wall, is_door, is_locked, is_hole
 
-from rogue.dungeon_gen import generate_level, populate_enemies, basic_scenario
+from rogue.dungeon_gen import (
+    generate_level,
+    populate_enemies,
+    basic_scenario,
+    room_anchor,
+)
 
-from rogue.particles import DamageText, Projectile
+from rogue.particles import DamageText, Projectile, Molecule, Aura
 
-from rogue.constants import CELL_SIZE, FPS
+from rogue.constants import CELL_SIZE, FPS, TPV
 from rogue.sprites import WALLS
 
 from typing import List, Optional
+
+
+def _center(pos):
+    return pos[0] + 0.5, pos[1] + 0.5
 
 
 class KeyReg:
@@ -70,12 +79,16 @@ def can_shoot(state) -> bool:
     return "wand" in state.player.flags
 
 
+def can_teleport(state) -> bool:
+    return "teleport" in state.player.flags
+
+
 def draw_damage(state, pos, damage, color):
     ppos = state.to_pixel(pos, CELL_SIZE)
     state.particles.append(DamageText(f"-{damage}", ppos, color))
 
 
-def player_shooting(state: State):
+def player_aiming(state: State):
     aim = state.aim
 
     if pyxel.btnr(pyxel.KEY_LEFT):
@@ -117,17 +130,24 @@ def player_action(state: State):
             )
 
     if state.aim:
-        return player_shooting(state)
+        return player_aiming(state)
     elif pyxel.btn(pyxel.KEY_DOWN):
-        target = x, y + 1
+        delta = 0, 1
     elif pyxel.btn(pyxel.KEY_UP):
-        target = x, y - 1
+        delta = 0, -1
     elif pyxel.btn(pyxel.KEY_LEFT):
-        target = x - 1, y
+        delta = -1, 0
     elif pyxel.btn(pyxel.KEY_RIGHT):
-        target = x + 1, y
+        delta = 1, 0
+
+    elif pyxel.btn(pyxel.KEY_SPACE):
+        for _ in range(50):
+            state.particles.append(Aura(_center(state.player.pos)))
+        return
     else:
         return
+
+    target = x + delta[0], y + delta[1]
 
     val = state.board.get(*target)
     entity = find_entity(state, *target)
@@ -155,6 +175,17 @@ def player_action(state: State):
         state.player.wait(FPS * 0.3, _end)
     elif is_wall(val) or state.board.outside(*target):
         state.player.bump_to(target, _end)
+
+    elif is_hole(val):
+        if can_teleport(state):
+            target = tuple(sum(e) for e in zip(target, delta))
+            for _ in range(50):
+                state.particles.append(
+                    Molecule(_center(state.player.pos), _center(target), TPV)
+                )
+            state.player.teleport(*target, _end, TPV)
+        else:
+            state.player.bump_to(target, _end)
     else:
         state.player.wait(FPS * 0.3, _end)
 
@@ -249,6 +280,7 @@ def update(state: State) -> State:
         state.visible.update(trav)
         if not state.board.outside(*hit):
             state.visible.add(hit)
+
 
     return state
 
@@ -356,13 +388,16 @@ class App:
         level, board = basic_scenario(*generate_level())
         enemies = populate_enemies(level, board)
 
+        entrance = board.to_index(*room_anchor(level.final_rooms[0]))
+
         self.state = State(
             level=level,
             board=board,
             camera=(0, 0),
-            player=Player(board.to_pos(board.entrance), 9000),
+            player=Player(board.to_pos(entrance), 9000),
             enemies=enemies,
         )
+        self.state.player.flags.add("teleport")
 
         self._draw = partial(draw, self.state)
         self._draw_debug = partial(debug.draw_debug, self.state)

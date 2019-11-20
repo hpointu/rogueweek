@@ -1,6 +1,9 @@
 import random
 import pyxel
 
+import math
+from math import sin, cos
+
 from rogue import tween
 from rogue.core import Particle, normalize, dist, ITEMS
 from rogue.constants import CELL_SIZE, FPS
@@ -109,3 +112,71 @@ class Projectile(Particle):
     def living(self):
         return bool(self._path)
 
+
+class FakeFountain(Particle):
+    def __init__(self, pos):
+        self.pos = pos
+
+    def update(self, state):
+        state.particles.append(Glitter(self.pos))
+
+    def living(self):
+        return False
+
+
+class Molecule(Particle):
+    def __init__(self, start, end, frames):
+        x, y = start
+        direction = 0, 0
+        while direction == (0, 0):
+            direction = random.randint(-10, 10), random.randint(-10, 10)
+        direction = normalize(direction)
+        distance = random.randint(10, 30) / 10
+        dx, dy = map((lambda x: x * distance), direction)
+        climax = (x + dx, y+ dy)
+        self._path = list(
+            tween.tween(start, climax, frames // 2, tween.EASE_OUT_QUAD)
+        )
+        self._path += list(
+            tween.tween(climax, end, frames // 2, tween.EASE_IN_QUAD)
+        )
+        self.color = random.choice([3, 7, 9, 15, 3])
+
+    def living(self):
+        return bool(self._path)
+
+    def update(self, state):
+        self._path.pop(0)
+
+    @property
+    def pos(self):
+        return self._path[0]
+
+    def draw(self, state):
+        pyxel.pix(*state.to_pixel(self.pos, CELL_SIZE), self.color)
+
+
+class Aura(Particle):
+    def __init__(self, center):
+        self._center = center
+        r = random.randint(0, 10) / 100
+        t = random.choice([r, math.pi / 2 + r, math.pi + r, math.pi * 3 / 2 + r])
+        #t = random.choice([r, math.pi + r])
+        self._path = list(tween.tween((2 + r, 2 * math.pi + t), (r, t), 20))
+        self._color = random.choice([8, 14])
+
+    @property
+    def pos(self):
+        r, theta = self._path[0]
+        x, y = self._center
+        dx, dy = r * cos(theta), r * sin(theta)
+        return x + dx, y + dy
+
+    def living(self):
+        return bool(self._path)
+
+    def update(self, state):
+        self._path.pop(0)
+
+    def draw(self, state):
+        pyxel.pix(*state.to_pixel(self.pos, CELL_SIZE), self._color)
