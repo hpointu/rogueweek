@@ -6,10 +6,11 @@ We chose to use Pyxel instead of PICO-8 because it's free. Although there are
 less constraints, it's still a lot of fun.
 
 
-# Features to implement
+# Features to implement / Wishlist
 
 ## General
 - [X] turned based gameplay
+- [ ] text/dialogs/information
 - [ ] title screen / menu
 - [X] particle system
 - [ ] sound effects
@@ -26,6 +27,7 @@ less constraints, it's still a lot of fun.
 - [X] player following enemies
 - [ ] distance shooting enemies
 - [ ] final boss
+- [ ] healing items
 
 ## Player skills:
 - [X] melee attack
