@@ -11,6 +11,8 @@ less constraints, it's still a lot of fun.
 ## General
 - [X] turned based gameplay
 - [ ] title screen / menu
+- [X] particle system
+- [ ] sound effects
 - [ ] keep stats and scores (load/save? no)
  
 ## Level features
