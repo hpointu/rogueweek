@@ -14,12 +14,12 @@ less constraints, it's still a lot of fun.
 - [ ] title screen / menu
 - [X] particle system
 - [ ] sound effects
-- [ ] keep stats and scores (load/save? no)
+- [ ] keep stats and scores
  
 ## Level features
 - [X] randomly generated levels
 - [X] sequential actions required to finish a level (key, door, boss)
-- [ ] more that one level (and stairs :) )
+- [ ] more than one level (and stairs :) )
 - [ ] traps / fire
 
 ## Content
@@ -28,6 +28,7 @@ less constraints, it's still a lot of fun.
 - [ ] distance shooting enemies
 - [ ] final boss
 - [ ] healing items
+- [ ] magic door (requires The Book)
 
 ## Player skills:
 - [X] melee attack
