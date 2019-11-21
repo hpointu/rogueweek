@@ -8,8 +8,24 @@ less constraints, it's still a lot of fun.
 
 # Features to implement
 
-- randomly generated levels
-- turned based gameplay
-- sequential actions required to finish a level (key, door, boss)
-- more that one level
-- keep stats and scores
+## General
+- [X] turned based gameplay
+- [ ] title screen / menu
+- [ ] keep stats and scores (load/save? no)
+ 
+## Level features
+- [X] randomly generated levels
+- [X] sequential actions required to finish a level (key, door, boss)
+- [ ] more that one level (and stairs :) )
+- [ ] traps / fire
+
+## Content
+- [X] randomly moving enemies
+- [X] player following enemies
+- [ ] distance shooting enemies
+- [ ] final boss
+
+## Player skills:
+- [X] melee attack
+- [X] distance attack
+- [X] teleport
