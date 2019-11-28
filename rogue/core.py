@@ -16,11 +16,12 @@ EW, NS = 0, 1
 
 
 ANIMATED = {
-    9000: (2, [(0, 32), (8, 32)], (0, 0), 4),
-    9001: (2, [(0, 40), (8, 40)], (0, -2), 10),
-    9002: (2, [(0, 48), (8, 48)], (0, 0), 11),
-    9003: (2, [(0, 56), (8, 56)], (0, 0), 12),
-    9010: (1, [(48, 40)], (0, 0), 10),
+    9000: (2, [(0, 32), (8, 32)], (8, 8), (0, 0), 4),
+    9001: (2, [(0, 40), (8, 40)], (8, 8), (0, -2), 10),
+    9002: (2, [(0, 48), (8, 48)], (8, 8), (0, 0), 11),
+    9003: (2, [(0, 56), (8, 56)], (8, 8), (0, 0), 12),
+    9004: (2, [(0, 64), (8, 64)], (8, 16), (2, 8), 12),
+    9010: (1, [(48, 40)], (8, 8), (0, 0), 10),
 }
 
 ITEMS = {
@@ -28,6 +29,7 @@ ITEMS = {
     'key': (80, 8, 8, 8, 1),
     'select': (112, 0, 8, 8, 0),
     'flare': (112, 8, 8, 8, 0),
+    'sleep_bullet': (120, 8, 8, 8, 0),
     'wand': (80, 24, 8, 8, 1),
     'teleport': (88, 8, 8, 8, 1),
 }
@@ -103,6 +105,7 @@ class Board:
 class Actor:
     orientation = 1
     pv = 20
+    strength = 2
 
     def __init__(self, pos, sprite_id):
         self.pos = pos
@@ -143,9 +146,7 @@ class Actor:
         return 2
 
     def shoot(self, target, callback):
-        damage = 1
-        target.pv -= damage
-        return damage
+        pass
 
     def move(self, x, y, callback, frames=int(FPS * 0.3)):
         self._action = self.do_move
@@ -214,6 +215,7 @@ class AIActor(Actor):
 class AnimSprite:
     count: int
     uvs: List[Tuple[int, int]]
+    size: Tuple[int, int]
     center: Tuple[int, int]
     rate: int
 

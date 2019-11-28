@@ -1,8 +1,12 @@
+import pyxel
 import random
+from functools import partial
 
-from rogue.constants import FPS
+
+from rogue.constants import FPS, CELL_SIZE
 from rogue.core import is_empty, dist
 from rogue.core import AIActor, ActionReport, State, Board
+from rogue.particles import Projectile, DamageText
 
 
 def can_walk(board: Board, x, y) -> bool:
@@ -44,8 +48,10 @@ def random_move(state: State, e: AIActor, end_turn) -> ActionReport:
     return None
 
 
-
 class Slug(AIActor):
+    pv = 2
+    strength = 2
+
     def __init__(self, pos):
         super().__init__(pos, 9001)
 
@@ -54,6 +60,9 @@ class Slug(AIActor):
 
 
 class Ghost(AIActor):
+    pv = 3
+    strength = 2
+
     def __init__(self, pos):
         super().__init__(pos, 9002)
 
@@ -62,8 +71,42 @@ class Ghost(AIActor):
 
 
 class Skeleton(AIActor):
+    pv = 4
+    strength = 2
+
     def __init__(self, pos):
         super().__init__(pos, 9003)
 
     def take_action(self, state: State, end_turn_fn) -> ActionReport:
         return straight_line(state, self, end_turn_fn)
+
+
+class Plant(AIActor):
+    pv = 1
+    strength = 1
+
+    def __init__(self, pos):
+        super().__init__(pos, 9004)
+
+    def shoot(self, state, target, callback):
+        self._callback = callback
+
+        def apply_damage(source):
+            damage = self.strength
+            target.pv -= damage
+            ppos = state.to_pixel(target.pos, CELL_SIZE)
+            state.particles.append(DamageText(f"-{damage}", ppos, 8))
+            pyxel.play(2, 50)
+            self.end_turn()
+
+        pyxel.play(3, 56)
+        state.particles.append(
+            Projectile(self.pos, target.pos, apply_damage)
+        )
+
+    def take_action(self, state: State, end_turn_fn) -> ActionReport:
+        if self.square in state.visible:
+            self.shoot(state, state.player, end_turn_fn)
+            return
+
+        return self.wait(1, end_turn_fn)

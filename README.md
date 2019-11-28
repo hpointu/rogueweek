@@ -26,7 +26,7 @@ less constraints, it's still a lot of fun.
 ## Content
 - [X] randomly moving enemies
 - [X] player following enemies
-- [ ] distance shooting enemies
+- [X] distance shooting enemies
 - [ ] final boss
 - [ ] healing items
 - [ ] magic door (requires The Book)

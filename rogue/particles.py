@@ -78,6 +78,9 @@ class Ash(Particle):
 
 
 class Projectile(Particle):
+    sprite = ITEMS['flare']
+    ashes = [3, 11]
+
     def __init__(self, start, end, callback=None):
         speed = 1/15
         d = dist(start, end)
@@ -88,7 +91,7 @@ class Projectile(Particle):
         # ashes
         n = random.randint(1, 3)
         for i in range(n):
-            col = random.choice([3, 11])
+            col = random.choice(self.ashes)
             x, y = self.pos
             x += random.randint(0, 50) / 100 + 0.25
             y += random.randint(0, 50) / 100 + 0.25
@@ -103,7 +106,7 @@ class Projectile(Particle):
 
     def draw(self, state):
         x, y = state.to_pixel(self.pos, CELL_SIZE)
-        pyxel.blt(x, y, 0, *ITEMS['flare'])
+        pyxel.blt(x, y, 0, *self.sprite)
 
     @property
     def pos(self):
@@ -111,6 +114,11 @@ class Projectile(Particle):
 
     def living(self):
         return bool(self._path)
+
+
+class SleepBullet(Projectile):
+    sprite = ITEMS['sleep_bullet']
+    ashes = [13, 14]
 
 
 class FakeFountain(Particle):

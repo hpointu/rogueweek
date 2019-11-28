@@ -27,6 +27,19 @@ from rogue.sprites import WALLS
 from typing import List, Optional
 
 
+def draw_damage(state, pos, damage, color):
+    ppos = state.to_pixel(pos, CELL_SIZE)
+    state.particles.append(DamageText(f"-{damage}", ppos, color))
+
+
+def apply_damage(state, entity, damage, end_fn, source):
+    entity.pv -= damage
+    draw_damage(state, entity.pos, damage, 12)
+    pyxel.play(2, 50)
+    state.aim = list()
+    end_fn(source)
+
+
 def _center(pos):
     return pos[0] + 0.5, pos[1] + 0.5
 
@@ -83,11 +96,6 @@ def can_teleport(state) -> bool:
     return "teleport" in state.player.flags
 
 
-def draw_damage(state, pos, damage, color):
-    ppos = state.to_pixel(pos, CELL_SIZE)
-    state.particles.append(DamageText(f"-{damage}", ppos, color))
-
-
 def player_aiming(state: State):
     aim = state.aim
 
@@ -101,14 +109,6 @@ def player_aiming(state: State):
     return
 
 
-def apply_damage(state, entity, damage, source):
-    entity.pv -= damage
-    draw_damage(state, entity.pos, damage, 12)
-    pyxel.play(2, 50)
-    state.aim = list()
-    end_turn(state)(source)
-
-
 def player_action(state: State):
     if state.player.is_busy():
         return
@@ -119,7 +119,7 @@ def player_action(state: State):
     if can_shoot(state) and pyxel.btnr(pyxel.KEY_C):
         if state.aim:
             e = state.aim[0]
-            fn = partial(apply_damage, state, e, 1)
+            fn = partial(apply_damage, state, e, 1, _end)
             state.particles.append(Projectile(state.player.pos, e.pos, fn))
             pyxel.play(3, 56)
 
@@ -353,8 +353,7 @@ def draw(state: State):
             y * CELL_SIZE - sp.center[1],
             0,
             *sp.uv,
-            CELL_SIZE,
-            CELL_SIZE,
+            *enemy.sprite.size,
             1,
         )
 
@@ -388,7 +387,8 @@ class App:
         level, board = basic_scenario(*generate_level())
         enemies = populate_enemies(level, board)
 
-        entrance = board.to_index(*room_anchor(level.final_rooms[0]))
+        # entrance = board.to_index(*room_anchor(level.final_rooms[0]))
+        entrance = board.entrance
 
         self.state = State(
             level=level,
@@ -397,7 +397,8 @@ class App:
             player=Player(board.to_pos(entrance), 9000),
             enemies=enemies,
         )
-        self.state.player.flags.add("teleport")
+        #self.state.player.flags.add("teleport")
+        #self.state.player.flags.add("wand")
 
         self._draw = partial(draw, self.state)
         self._draw_debug = partial(debug.draw_debug, self.state)
