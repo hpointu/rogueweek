@@ -27,6 +27,14 @@ from rogue.sprites import WALLS
 from typing import List, Optional
 
 
+MENU = [
+    ("Do this", lambda x: print("do this")),
+    ("Eat", lambda x: print("eat")),
+    ("Do that", lambda x: print("that")),
+    ("Exit", lambda x: print("EXIT")),
+]
+
+
 def draw_damage(state, pos, damage, color):
     ppos = state.to_pixel(pos, CELL_SIZE)
     state.particles.append(DamageText(f"-{damage}", ppos, color))
@@ -96,6 +104,15 @@ def can_teleport(state) -> bool:
     return "teleport" in state.player.flags
 
 
+def update_menu(state: State):
+    if pyxel.btnr(pyxel.KEY_UP):
+        state.menu_item = max(state.menu_item - 1, 0)
+        pyxel.play(3, 55)
+    elif pyxel.btnr(pyxel.KEY_DOWN):
+        state.menu_item = min(state.menu_item + 1, len(MENU) - 1)
+        pyxel.play(3, 55)
+
+
 def player_aiming(state: State):
     aim = state.aim
 
@@ -116,21 +133,32 @@ def player_action(state: State):
     x, y = state.player.square
     _end = end_turn(state)
 
-    if can_shoot(state) and pyxel.btnr(pyxel.KEY_C):
-        if state.aim:
-            e = state.aim[0]
-            fn = partial(apply_damage, state, e, 1, _end)
-            state.particles.append(Projectile(state.player.pos, e.pos, fn))
-            pyxel.play(3, 56)
-
+    if pyxel.btnr(pyxel.KEY_C):
+        if state.menu_item is None:
+            state.menu_item = 0
+            return
         else:
-            state.aim = sorted(
-                [e for e in state.enemies if e.square in state.visible],
-                key=lambda x: x.pos[0],
-            )
+            menu_select = MENU[state.menu_item]
+            state.menu_item = None
+            return menu_select[1](state)
 
-    if state.aim:
-        return player_aiming(state)
+    #if can_shoot(state) and pyxel.btnr(pyxel.KEY_C):
+    #    if state.aim:
+    #        e = state.aim[0]
+    #        fn = partial(apply_damage, state, e, 1, _end)
+    #        state.particles.append(Projectile(state.player.pos, e.pos, fn))
+    #        pyxel.play(3, 56)
+
+    #    else:
+    #        state.aim = sorted(
+    #            [e for e in state.enemies if e.square in state.visible],
+    #            key=lambda x: x.pos[0],
+    #        )
+
+    if state.menu_item is not None:
+        return update_menu(state)
+    elif state.active_tool is not None:
+        return state.active_tool.update(state)
     elif pyxel.btn(pyxel.KEY_DOWN):
         delta = 0, 1
     elif pyxel.btn(pyxel.KEY_UP):
@@ -379,6 +407,17 @@ def draw(state: State):
         if flag in state.player.flags:
             pyxel.blt(3 + i * 8, 20, 0, *ITEMS[flag])
 
+    # MENU
+    if state.menu_item is not None:
+        h = 4 + len(MENU) * 8
+        pyxel.rect(40, 40, 48, h, 0)
+        pyxel.rectb(40, 40, 48, h, 2)
+
+        for i, (item, _) in enumerate(MENU):
+            pyxel.text(50, 43 + i * 8, item, 6)
+
+        pyxel.blt(41, 42 + state.menu_item * 8, 0, *ITEMS["dot"])
+
 
 class App:
     _debug: bool = False
@@ -397,8 +436,9 @@ class App:
             player=Player(board.to_pos(entrance), 9000),
             enemies=enemies,
         )
-        #self.state.player.flags.add("teleport")
-        #self.state.player.flags.add("wand")
+        self.state.player.flags.add("teleport")
+        self.state.player.flags.add("wand")
+        self.state.player.flags.add("thunder")
 
         self._draw = partial(draw, self.state)
         self._draw_debug = partial(debug.draw_debug, self.state)

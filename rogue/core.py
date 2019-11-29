@@ -28,6 +28,7 @@ ANIMATED = {
 ITEMS = {
     'chest': (48, 16, 8, 8, 0),
     'key': (80, 8, 8, 8, 1),
+    'dot': (80, 16, 8, 8, 1),
     'select': (112, 0, 8, 8, 0),
     'flare': (112, 8, 8, 8, 0),
     'sleep_bullet': (120, 8, 8, 8, 0),
@@ -240,6 +241,11 @@ class AnimSprite:
             self._start += 1
 
 
+class Tool:
+    def update(self, state):
+        pass
+
+
 @dataclass
 class State:
     max_range = 5
@@ -253,6 +259,8 @@ class State:
     particles: List[Particle] = field(default_factory=list)
     player_turn: bool = True
     aim: List[Actor] = field(default_factory=list)
+    menu_item: Optional[int] = None
+    active_tool: Optional[Tool] = None
 
     def to_cam_space(self, pos: Tuple[float, float]):
         px, py = pos
