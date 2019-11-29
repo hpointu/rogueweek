@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from math import sqrt
-from typing import List, Tuple, Any, Set, Optional
+from typing import List, Tuple, Any, Set, Optional, Callable
 
 from rogue import tween
 
@@ -243,7 +243,10 @@ class AnimSprite:
 
 class Tool:
     def update(self, state):
-        pass
+        raise NotImplementedError
+
+    def draw(self, state):
+        raise NotImplementedError
 
 
 @dataclass
@@ -258,8 +261,9 @@ class State:
     visible: Set[GridCoord] = field(default_factory=set)
     particles: List[Particle] = field(default_factory=list)
     player_turn: bool = True
-    aim: List[Actor] = field(default_factory=list)
-    menu_item: Optional[int] = None
+    # aim: List[Actor] = field(default_factory=list)
+    # menu: list[MenuItem] = field(default_factory=list)
+    menu_index: Optional[int] = None
     active_tool: Optional[Tool] = None
 
     def to_cam_space(self, pos: Tuple[float, float]):
@@ -269,6 +273,9 @@ class State:
 
     def to_pixel(self, pos: Tuple[float, float], tile_size):
         return tuple(c * tile_size for c in self.to_cam_space(pos))
+
+
+MenuItem = Tuple[str, Callable[[State], None]]
 
 
 class Particle:

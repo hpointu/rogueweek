@@ -7,7 +7,7 @@ from rogue import debug
 
 from rogue.actions import end_turn, open_door, unlock_door
 
-from rogue.core import ITEMS, LevelItem
+from rogue.core import ITEMS, LevelItem, Tool, MenuItem
 from rogue.core import Board, State, Player, VecF
 from rogue.core import dist, index_to_pos, cast_ray
 from rogue.core import is_empty, is_wall, is_door, is_locked, is_hole
@@ -25,14 +25,6 @@ from rogue.constants import CELL_SIZE, FPS, TPV
 from rogue.sprites import WALLS
 
 from typing import List, Optional
-
-
-MENU = [
-    ("Do this", lambda x: print("do this")),
-    ("Eat", lambda x: print("eat")),
-    ("Do that", lambda x: print("that")),
-    ("Exit", lambda x: print("EXIT")),
-]
 
 
 def draw_damage(state, pos, damage, color):
@@ -105,25 +97,79 @@ def can_teleport(state) -> bool:
 
 
 def update_menu(state: State):
+    menu_ = menu(state)
     if pyxel.btnr(pyxel.KEY_UP):
-        state.menu_item = max(state.menu_item - 1, 0)
+        state.menu_index = max(state.menu_index - 1, 0)
         pyxel.play(3, 55)
     elif pyxel.btnr(pyxel.KEY_DOWN):
-        state.menu_item = min(state.menu_item + 1, len(MENU) - 1)
+        state.menu_index = min(state.menu_index + 1, len(menu_) - 1)
         pyxel.play(3, 55)
 
 
 def player_aiming(state: State):
     aim = state.aim
-
-    if pyxel.btnr(pyxel.KEY_LEFT):
-        state.aim = aim[-1:] + aim[:-1]
-        pyxel.play(3, 55)
-    elif pyxel.btnr(pyxel.KEY_RIGHT):
-        state.aim = aim[1:] + aim[:1]
-        pyxel.play(3, 55)
-
     return
+
+
+class Wand(Tool):
+
+    def __init__(self, state):
+        self.aim = sorted(
+            [e for e in state.enemies if e.square in state.visible],
+            key=lambda x: x.pos[0],
+        )
+
+    def use(self, state: State, end_fn):
+        e = self.aim[0]
+        fn = partial(apply_damage, state, e, 1, end_fn)
+        state.particles.append(Projectile(state.player.pos, e.pos, fn))
+        pyxel.play(3, 56)
+
+
+    def draw(self, state: State):
+        if not self.aim:
+            return
+        x, y = state.to_cam_space(self.aim[0].square)
+        pyxel.blt(
+            x * CELL_SIZE, y * CELL_SIZE + CELL_SIZE, 0, *ITEMS["select"]
+        )
+
+    def update(self, state: State, end_fn):
+        aim = self.aim
+
+        if not aim:
+            state.active_tool = None
+
+        if pyxel.btnr(pyxel.KEY_X):
+            state.active_tool = None
+
+        elif pyxel.btnr(pyxel.KEY_C):
+            self.use(state, end_fn)
+            state.active_tool = None
+
+        elif pyxel.btnr(pyxel.KEY_LEFT):
+            self.aim = aim[-1:] + aim[:-1]
+            pyxel.play(3, 55)
+
+        elif pyxel.btnr(pyxel.KEY_RIGHT):
+            self.aim = aim[1:] + aim[:1]
+            pyxel.play(3, 55)
+
+
+def menu(state) -> List[MenuItem]:
+    m = []
+
+    def set_tool(t, s):
+        s.active_tool = t
+
+    if "wand" in state.player.flags:
+        m.append(("Shoot", partial(set_tool, Wand(state))))
+    return m + [("Exit", lambda x: print("exit game"))]
+
+
+def menu_item(state):
+    menu_ = menu(state)
+    return menu_[state.menu_index]
 
 
 def player_action(state: State):
@@ -133,32 +179,19 @@ def player_action(state: State):
     x, y = state.player.square
     _end = end_turn(state)
 
-    if pyxel.btnr(pyxel.KEY_C):
-        if state.menu_item is None:
-            state.menu_item = 0
+    if state.active_tool is not None:
+        return state.active_tool.update(state, _end)
+    elif pyxel.btnr(pyxel.KEY_C):
+        if state.menu_index is None:
+            state.menu_index = 0
             return
         else:
-            menu_select = MENU[state.menu_item]
-            state.menu_item = None
+            menu_select = menu_item(state)
+            state.menu_index = None
             return menu_select[1](state)
 
-    #if can_shoot(state) and pyxel.btnr(pyxel.KEY_C):
-    #    if state.aim:
-    #        e = state.aim[0]
-    #        fn = partial(apply_damage, state, e, 1, _end)
-    #        state.particles.append(Projectile(state.player.pos, e.pos, fn))
-    #        pyxel.play(3, 56)
-
-    #    else:
-    #        state.aim = sorted(
-    #            [e for e in state.enemies if e.square in state.visible],
-    #            key=lambda x: x.pos[0],
-    #        )
-
-    if state.menu_item is not None:
+    if state.menu_index is not None:
         return update_menu(state)
-    elif state.active_tool is not None:
-        return state.active_tool.update(state)
     elif pyxel.btn(pyxel.KEY_DOWN):
         delta = 0, 1
     elif pyxel.btn(pyxel.KEY_UP):
@@ -388,11 +421,9 @@ def draw(state: State):
     for p in state.particles:
         p.draw(state)
 
-    if state.aim:
-        x, y = state.to_cam_space(state.aim[0].square)
-        pyxel.blt(
-            x * CELL_SIZE, y * CELL_SIZE + CELL_SIZE, 0, *ITEMS["select"]
-        )
+    # Active Tool
+    if state.active_tool is not None:
+        state.active_tool.draw(state)
 
     # HUD
     pyxel.rect(3, 3, 2 * state.player.pv, 7, 2)
@@ -408,15 +439,16 @@ def draw(state: State):
             pyxel.blt(3 + i * 8, 20, 0, *ITEMS[flag])
 
     # MENU
-    if state.menu_item is not None:
-        h = 4 + len(MENU) * 8
+    menu_ = menu(state)
+    if state.menu_index is not None:
+        h = 4 + len(menu_) * 8
         pyxel.rect(40, 40, 48, h, 0)
-        pyxel.rectb(40, 40, 48, h, 2)
+        pyxel.rectb(40, 40, 48, h, 5)
 
-        for i, (item, _) in enumerate(MENU):
+        for i, (item, _) in enumerate(menu_):
             pyxel.text(50, 43 + i * 8, item, 6)
 
-        pyxel.blt(41, 42 + state.menu_item * 8, 0, *ITEMS["dot"])
+        pyxel.blt(41, 42 + state.menu_index * 8, 0, *ITEMS["dot"])
 
 
 class App:
@@ -426,8 +458,8 @@ class App:
         level, board = basic_scenario(*generate_level())
         enemies = populate_enemies(level, board)
 
-        # entrance = board.to_index(*room_anchor(level.final_rooms[0]))
-        entrance = board.entrance
+        entrance = board.to_index(*room_anchor(level.final_rooms[0]))
+        #entrance = board.entrance
 
         self.state = State(
             level=level,
