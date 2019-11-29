@@ -27,7 +27,7 @@ from rogue.core import (
     Position,
 )
 
-from rogue.enemies import Slug, Skeleton, Ghost, Plant
+from rogue.enemies import Slug, Skeleton, Ghost, Plant, Bat
 
 M_SIZE = 4
 MAX_ROOM_SIZE = 8
@@ -387,7 +387,7 @@ def populate_enemies(level: Level, board: Board):
         r = random.randint(0, 100)
 
         if r > 97:
-            enemy_cls = random.choice([Ghost, Skeleton, Slug, Plant])
+            enemy_cls = random.choice([Ghost, Skeleton, Slug, Plant, Bat])
             e = enemy_cls(index_to_pos(i, board.side))
             e.sprite.play()
             enemies.append(e)

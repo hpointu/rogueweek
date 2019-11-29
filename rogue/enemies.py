@@ -81,6 +81,17 @@ class Skeleton(AIActor):
         return straight_line(state, self, end_turn_fn)
 
 
+class Bat(AIActor):
+    pv = 1
+    strength = 1
+
+    def __init__(self, pos):
+        super().__init__(pos, 9005)
+
+    def take_action(self, state: State, end_turn_fn) -> ActionReport:
+        return random_move(state, self, end_turn_fn)
+
+
 class Plant(AIActor):
     pv = 1
     strength = 1
