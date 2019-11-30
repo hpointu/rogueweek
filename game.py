@@ -111,20 +111,9 @@ def player_aiming(state: State):
     return
 
 
-class Wand(Tool):
-
-    def __init__(self, state):
-        self.aim = sorted(
-            [e for e in state.enemies if e.square in state.visible],
-            key=lambda x: x.pos[0],
-        )
-
-    def use(self, state: State, end_fn):
-        e = self.aim[0]
-        fn = partial(apply_damage, state, e, 1, end_fn)
-        state.particles.append(Projectile(state.player.pos, e.pos, fn))
-        pyxel.play(3, 56)
-
+class AimingTool(Tool):
+    def __init__(self):
+        self.aim = []
 
     def draw(self, state: State):
         if not self.aim:
@@ -156,6 +145,66 @@ class Wand(Tool):
             pyxel.play(3, 55)
 
 
+class Wand(AimingTool):
+    def __init__(self, state):
+        self.aim = sorted(
+            [e for e in state.enemies if e.square in state.visible],
+            key=lambda x: x.pos[0],
+        )
+
+    def use(self, state: State, end_fn):
+        e = self.aim[0]
+        fn = partial(apply_damage, state, e, 1, end_fn)
+        state.particles.append(Projectile(state.player.pos, e.pos, fn))
+        pyxel.play(3, 56)
+
+
+class Teleport(Tool):
+    def __init__(self, state):
+        self.pos = state.player.pos
+        self.d = 0
+
+    def use(self, state: State, end_fn):
+        if (
+            not is_empty(state.board.get(*self.pos))
+            or self.pos not in state.visible
+        ):
+            return
+
+        state.active_tool = None
+        for _ in range(50):
+            state.particles.append(
+                Molecule(_center(state.player.pos), _center(self.pos), TPV)
+            )
+        state.player.teleport(*self.pos, end_fn, TPV)
+
+    def update(self, state, end_fn):
+        x, y = self.pos
+
+        if pyxel.btnr(pyxel.KEY_LEFT):
+            x -= 1
+        elif pyxel.btnr(pyxel.KEY_DOWN):
+            y += 1
+        elif pyxel.btnr(pyxel.KEY_RIGHT):
+            x += 1
+        elif pyxel.btnr(pyxel.KEY_UP):
+            y -= 1
+        elif pyxel.btnr(pyxel.KEY_C):
+            self.use(state, end_fn)
+
+        px, py = state.player.pos
+        d = abs(x - px) + abs(y - py)
+        if d < 4:
+            self.pos = x, y
+            self.d = int(d)
+
+    def draw(self, state: State):
+        x, y = state.to_cam_space(self.pos)
+        pyxel.text(
+            x * CELL_SIZE + 2, y * CELL_SIZE + 4, str(self.d), 8,
+        )
+
+
 def menu(state) -> List[MenuItem]:
     m = []
 
@@ -164,6 +213,8 @@ def menu(state) -> List[MenuItem]:
 
     if "wand" in state.player.flags:
         m.append(("Shoot", partial(set_tool, Wand(state))))
+    if "teleport" in state.player.flags:
+        m.append(("Teleport", partial(set_tool, Teleport(state))))
     return m + [("Exit", lambda x: print("exit game"))]
 
 
@@ -342,7 +393,6 @@ def update(state: State) -> State:
         if not state.board.outside(*hit):
             state.visible.add(hit)
 
-
     return state
 
 
@@ -459,7 +509,7 @@ class App:
         enemies = populate_enemies(level, board)
 
         entrance = board.to_index(*room_anchor(level.final_rooms[0]))
-        #entrance = board.entrance
+        # entrance = board.entrance
 
         self.state = State(
             level=level,
