@@ -508,8 +508,8 @@ class App:
         level, board = basic_scenario(*generate_level())
         enemies = populate_enemies(level, board)
 
-        entrance = board.to_index(*room_anchor(level.final_rooms[0]))
-        # entrance = board.entrance
+        # entrance = board.to_index(*room_anchor(level.final_rooms[0]))
+        entrance = board.entrance
 
         self.state = State(
             level=level,
@@ -518,9 +518,9 @@ class App:
             player=Player(board.to_pos(entrance), 9000),
             enemies=enemies,
         )
-        self.state.player.flags.add("teleport")
-        self.state.player.flags.add("wand")
-        self.state.player.flags.add("thunder")
+        # self.state.player.flags.add("teleport")
+        # self.state.player.flags.add("wand")
+        # self.state.player.flags.add("thunder")
 
         self._draw = partial(draw, self.state)
         self._draw_debug = partial(debug.draw_debug, self.state)
