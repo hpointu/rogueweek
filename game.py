@@ -4,6 +4,7 @@ import random
 from functools import partial
 
 from rogue import debug
+from rogue import misc
 
 from rogue.actions import end_turn, open_door, unlock_door
 
@@ -326,6 +327,9 @@ def update(state: State) -> State:
         game_turn(state)
 
     state.player.update(state)
+
+    if state.player.pv < 1:
+        state.text_box = misc.TextBox("skull", "You are dead...")
 
     # Move camera if needed
     px, py = state.player.pos
