@@ -27,7 +27,8 @@ ANIMATED = {
 
 ITEMS = {
     'chest': (48, 16, 8, 8, 0),
-    'key': (80, 8, 8, 8, 1),
+    # 'key': (80, 8, 8, 8, 1),
+    'key': (104, 24, 8, 8, 1),
     'dot': (80, 16, 8, 8, 1),
     'select': (112, 0, 8, 8, 0),
     'flare': (112, 8, 8, 8, 0),
@@ -261,10 +262,9 @@ class State:
     visible: Set[GridCoord] = field(default_factory=set)
     particles: List[Particle] = field(default_factory=list)
     player_turn: bool = True
-    # aim: List[Actor] = field(default_factory=list)
-    # menu: list[MenuItem] = field(default_factory=list)
     menu_index: Optional[int] = None
     active_tool: Optional[Tool] = None
+    text_box: Optional[Any] = None
 
     def to_cam_space(self, pos: Tuple[float, float]):
         px, py = pos

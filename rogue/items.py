@@ -1,18 +1,30 @@
 import pyxel
 from functools import partial
 from rogue.core import LevelItem, State, Player
+from rogue.misc import TextBox
 
 
-def _add_key(player: Player) -> Player:
-    player.keys += 1
+def _add_key(state: State) -> State:
+    def _add(s):
+        s.player.keys += 1
+
+    state.text_box = TextBox("key", "You can unlock a door!", _add)
     pyxel.play(3, 52)
-    return player
+    return state
 
 
-def _add_flag(flag: str, player: Player) -> Player:
-    player.flags.add(flag)
+FLAGS_TEXT_BOX = {
+    "teleport": "You can now teleport!",
+    "wand": "You can shoot at enemies!",
+}
+
+
+def _add_flag(flag: str, state: State) -> State:
+    state.text_box = TextBox(
+        flag, FLAGS_TEXT_BOX[flag], lambda s: s.player.flags.add(flag)
+    )
     pyxel.play(3, 52)
-    return player
+    return state
 
 
 ADD_KEY = _add_key
@@ -24,9 +36,9 @@ class Chest(LevelItem):
     def __init__(self, content_fn, *args, **kw):
         super().__init__(*args, **kw)
         self.content_fn = content_fn
-        self.sprite_id = 'chest'
+        self.sprite_id = "chest"
 
     def interact(self, state: State):
-        state.player = self.content_fn(state.player)
+        state = self.content_fn(state)
         # I know...
         state.level.items.remove(self)
