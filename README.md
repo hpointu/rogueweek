@@ -10,7 +10,7 @@ less constraints, it's still a lot of fun.
 
 ## General
 - [X] turned based gameplay
-- [ ] text/dialogs/information
+- [X] text/dialogs/information
 - [ ] title screen / menu
 - [X] particle system
 - [ ] sound effects
@@ -35,3 +35,4 @@ less constraints, it's still a lot of fun.
 - [X] melee attack
 - [X] distance attack
 - [X] teleport
+- [ ] thunder storm

@@ -317,7 +317,10 @@ def game_turn(state: State):
 def update(state: State) -> State:
     x, y = state.player.pos
 
-    if state.player_turn:
+    if state.text_box is not None:
+        state.text_box.update(state)
+        return
+    elif state.player_turn:
         player_action(state)
     else:
         game_turn(state)
@@ -475,6 +478,9 @@ def draw(state: State):
     if state.active_tool is not None:
         state.active_tool.draw(state)
 
+    if state.text_box is not None:
+        state.text_box.draw(state)
+
     # HUD
     pyxel.rect(3, 3, 2 * state.player.pv, 7, 2)
     pyxel.rect(3, 3, 2 * state.player.pv, 5, 8)
@@ -499,6 +505,8 @@ def draw(state: State):
             pyxel.text(50, 43 + i * 8, item, 6)
 
         pyxel.blt(41, 42 + state.menu_index * 8, 0, *ITEMS["dot"])
+        pyxel.rect(17, 121, 128, 7, 0)
+        pyxel.text(19, 122, "X: Exit / C: Confirm", 7)
 
 
 class App:
@@ -510,6 +518,7 @@ class App:
 
         # entrance = board.to_index(*room_anchor(level.final_rooms[0]))
         entrance = board.entrance
+        # entrance = board.to_index(*room_anchor(level.final_rooms[1]))
 
         self.state = State(
             level=level,
