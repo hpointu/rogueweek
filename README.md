@@ -14,7 +14,7 @@ less constraints, it's still a lot of fun.
 - [ ] title screen / menu
 - [X] particle system
 - [ ] sound effects
-- [ ] handle death :)
+- [X] handle death :)
 - [ ] keep stats and scores
  
 ## Level features

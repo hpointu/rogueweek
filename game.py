@@ -20,7 +20,7 @@ from rogue.dungeon_gen import (
     room_anchor,
 )
 
-from rogue.particles import DamageText, Projectile, Molecule, Aura
+from rogue.particles import DamageText, Projectile, Molecule, Aura, Thunder
 
 from rogue.constants import CELL_SIZE, FPS, TPV
 from rogue.sprites import WALLS
@@ -241,9 +241,17 @@ def player_action(state: State):
             menu_select = menu_item(state)
             state.menu_index = None
             return menu_select[1](state)
+    if pyxel.btnr(pyxel.KEY_ENTER):
+
+        def _dist_to_player(e):
+            return dist(e.square, state.player.square)
+
+        e = sorted(state.enemies, key=_dist_to_player)[0]
+        state.player.thunder(state, state.player, e)
 
     if state.menu_index is not None:
         return update_menu(state)
+
     elif pyxel.btn(pyxel.KEY_DOWN):
         delta = 0, 1
     elif pyxel.btn(pyxel.KEY_UP):
@@ -328,8 +336,8 @@ def update(state: State) -> State:
 
     state.player.update(state)
 
-    if state.player.pv < 1:
-        state.text_box = misc.TextBox("skull", "You are dead...")
+    # if state.player.pv < 1:
+    #     state.text_box = misc.TextBox("skull", "You are dead...")
 
     # Move camera if needed
     px, py = state.player.pos

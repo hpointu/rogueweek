@@ -5,7 +5,7 @@ import math
 from math import sin, cos
 
 from rogue import tween
-from rogue.core import Particle, normalize, dist, ITEMS
+from rogue.core import Particle, normalize, dist, ITEMS, line, State
 from rogue.constants import CELL_SIZE, FPS
 
 
@@ -78,11 +78,11 @@ class Ash(Particle):
 
 
 class Projectile(Particle):
-    sprite = ITEMS['flare']
+    sprite = ITEMS["flare"]
     ashes = [3, 11]
 
     def __init__(self, start, end, callback=None):
-        speed = 1/15
+        speed = 1 / 15
         d = dist(start, end)
         self._path = list(tween.tween(start, end, int(speed * d * FPS)))
         self._callback = callback
@@ -117,7 +117,7 @@ class Projectile(Particle):
 
 
 class SleepBullet(Projectile):
-    sprite = ITEMS['sleep_bullet']
+    sprite = ITEMS["sleep_bullet"]
     ashes = [13, 14]
 
 
@@ -141,7 +141,7 @@ class Molecule(Particle):
         direction = normalize(direction)
         distance = random.randint(10, 30) / 10
         dx, dy = map((lambda x: x * distance), direction)
-        climax = (x + dx, y+ dy)
+        climax = (x + dx, y + dy)
         self._path = list(
             tween.tween(start, climax, frames // 2, tween.EASE_OUT_QUAD)
         )
@@ -168,8 +168,10 @@ class Aura(Particle):
     def __init__(self, center):
         self._center = center
         r = random.randint(0, 10) / 100
-        t = random.choice([r, math.pi / 2 + r, math.pi + r, math.pi * 3 / 2 + r])
-        #t = random.choice([r, math.pi + r])
+        t = random.choice(
+            [r, math.pi / 2 + r, math.pi + r, math.pi * 3 / 2 + r]
+        )
+        # t = random.choice([r, math.pi + r])
         self._path = list(tween.tween((2 + r, 2 * math.pi + t), (r, t), 20))
         self._color = random.choice([8, 14])
 
@@ -188,3 +190,72 @@ class Aura(Particle):
 
     def draw(self, state):
         pyxel.pix(*state.to_pixel(self.pos, CELL_SIZE), self._color)
+
+
+def rwalk(a, b):
+    d = int(dist(a, b) / CELL_SIZE) + 2
+    path = list(tween.tween(a, b, d))
+
+    def _distort(p):
+        x, y = p
+        delta = random.gauss(0, CELL_SIZE / 3)
+        nx, ny = normalize((y, -x))
+        dx = nx * delta
+        dy = ny * delta
+
+        return x + dx, y + dy
+
+    return [_distort(p) for p in path[:-1]] + [path[-1]]
+
+
+def _center(pos):
+    return pos[0] + 0.5, pos[1] + 0.5
+
+
+class Pixel(Particle):
+    def __init__(self, pos, col, life):
+        self.pos = pos
+        self.col = col
+        self.life = life
+
+    def living(self):
+        return self.life > 0
+
+    def draw(self, state):
+        pyxel.pix(*self.pos, self.col)
+
+    def update(self, state):
+        self.life -= 1
+
+
+class Thunder(Particle):
+    _cpt = 30
+
+    def __init__(self, state: State, start, target):
+        start = state.to_pixel(_center(start), CELL_SIZE)
+        target = state.to_pixel(_center(target), CELL_SIZE)
+        points = rwalk(start, target)
+        path = []
+        for p in points:
+            p = tuple(map(int, p))
+            path += line(start, p)
+            start = p
+        self._path = path
+        self._points = []
+
+    def update(self, state):
+        self._cpt -= 1
+        for _ in range(8):
+            if self._path:
+                state.particles.append(
+                    Pixel(self._path.pop(0), random.choice([7, 12]), 8)
+                )
+
+        if not self._path:
+            pass
+
+    def draw(self, state):
+        pass
+
+    def living(self):
+        return self._cpt > 0

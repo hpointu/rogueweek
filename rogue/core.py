@@ -203,6 +203,11 @@ class Player(Actor):
         self.sprite.play()
         return r
 
+    def thunder(self, state, e1, e2):
+        from rogue.particles import Thunder
+        state.particles.append(Thunder(state, e1.square, e2.square))
+        state.particles.append(Thunder(state, e1.square, e2.square))
+
     def end_turn(self):
         super().end_turn()
         self.sprite.stop()
@@ -273,7 +278,7 @@ class State:
         return px - cx, py - cy
 
     def to_pixel(self, pos: Tuple[float, float], tile_size):
-        return tuple(c * tile_size for c in self.to_cam_space(pos))
+        return tuple(int(c * tile_size) for c in self.to_cam_space(pos))
 
 
 MenuItem = Tuple[str, Callable[[State], None]]
@@ -329,6 +334,45 @@ def dist(p1, p2):
 def normalize(v):
     length = dist((0, 0), v)
     return v[0] / length, v[1] / length
+
+
+def line(a, b):
+    ax, ay = a
+    bx, by = b
+    dx = bx - ax
+    dy = by - ay
+    error = 0
+    line_ = []
+
+
+    if abs(dx) > abs(dy):
+        if ax > bx:
+            return line(b, a)
+        if dx == 0:
+            return [(ax, y) for y in range(ay, by)]
+        derr = abs(dy / dx)
+        y = ay
+        for x in range(ax, bx):
+            line_.append((x, y))
+            error += derr
+            if error >= 0.5:
+                y += 1 if dy > 0 else -1
+                error -= 1
+    else:
+        if ay > by:
+            return line(b, a)
+        # if dx == 0:
+        #     return [(ax, y) for y in range(ay, by)]
+        x = ax
+        derr = abs(dx / dy)
+        for y in range(ay, by):
+            line_.append((x, y))
+            error += derr
+            if error >= 0.5:
+                x += 1 if dx > 0 else -1
+                error -= 1
+
+    return line_
 
 
 def cast_ray(
