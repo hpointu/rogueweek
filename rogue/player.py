@@ -33,7 +33,7 @@ class Player(Actor):
         touched = touched or {e2}
 
         def _apply_damage(source, delay):
-            damage = 2
+            damage = 1
             e2.pv -= damage
             ppos = state.to_pixel(e2.pos, CELL_SIZE)
             state.particles.append(DamageText(f"-{damage}", ppos, 12))

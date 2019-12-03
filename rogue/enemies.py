@@ -38,10 +38,14 @@ def random_move(state: State, e: AIActor, end_turn) -> ActionReport:
         n for n in state.board.neighbours(*e.pos) if can_walk(state.board, *n)
     ]
 
+    speed = int(0.3 * FPS) if e.square in state.visible else 1
+
+    if not possible:
+        return e.wait(speed, end_turn)
+
     if state.player.square in possible:
         return e.attack(state.player, end_turn)
 
-    speed = int(0.3 * FPS) if e.square in state.visible else 1
     x, y = random.choice(possible)
     e.move(x, y, end_turn, speed)
 

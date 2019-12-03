@@ -157,7 +157,7 @@ class Wand(AimingTool):
 
     def use(self, state: State, end_fn):
         e = self.aim[0]
-        fn = partial(apply_damage, state, e, 1, end_fn)
+        fn = partial(apply_damage, state, e, 2, end_fn)
         state.particles.append(Projectile(state.player.pos, e.pos, fn))
         pyxel.play(3, 56)
 
@@ -208,6 +208,33 @@ class Teleport(Tool):
         )
 
 
+class ThunderTool:
+    def update(self, state, end_fn):
+        enemies = sorted(
+            [
+                e
+                for e in state.enemies
+                if e.square in state.visible
+                and dist(state.player.pos, e.pos) < 5
+            ],
+            key=lambda e: dist(e.pos, state.player.pos),
+        )
+        if not enemies:
+            state.text_box = misc.TextBox(
+                "thunder", "There is no one in range"
+            )
+            target = None
+        else:
+            target = random.choice(enemies)
+
+        state.active_tool = None
+        if target:
+            state.player.thunder(state, state.player, target, end_fn)
+
+    def draw(self, state):
+        pass
+
+
 def menu(state) -> List[MenuItem]:
     m = []
 
@@ -218,6 +245,8 @@ def menu(state) -> List[MenuItem]:
         m.append(("Shoot", partial(set_tool, Wand(state))))
     if "teleport" in state.player.flags:
         m.append(("Teleport", partial(set_tool, Teleport(state))))
+    if "thunder" in state.player.flags:
+        m.append(("Thunder", partial(set_tool, ThunderTool())))
     return m + [("Exit", lambda x: print("exit game"))]
 
 
@@ -243,13 +272,6 @@ def player_action(state: State):
             menu_select = menu_item(state)
             state.menu_index = None
             return menu_select[1](state)
-    if pyxel.btnr(pyxel.KEY_ENTER):
-
-        def _dist_to_player(e):
-            return dist(e.square, state.player.square)
-
-        e = sorted(state.enemies, key=_dist_to_player)[0]
-        state.player.thunder(state, state.player, e, _end)
 
     if state.menu_index is not None:
         return update_menu(state)
@@ -504,7 +526,7 @@ def draw(state: State):
     for i in range(state.player.keys):
         pyxel.blt(3 + i * 7, 12, 0, *ITEMS["key"])
 
-    for i, flag in enumerate(["wand", "teleport"]):
+    for i, flag in enumerate(["wand", "teleport", "thunder"]):
         if flag in state.player.flags:
             pyxel.blt(3 + i * 8, 20, 0, *ITEMS[flag])
 
@@ -521,6 +543,10 @@ def draw(state: State):
         pyxel.blt(41, 42 + state.menu_index * 8, 0, *ITEMS["dot"])
         pyxel.rect(17, 121, 128, 7, 0)
         pyxel.text(19, 122, "X: Exit / C: Confirm", 7)
+    elif state.text_box is not None:
+        pyxel.text(3, 122, "X/C: Close", 7)
+    else:
+        pyxel.text(3, 122, "C: Menu", 7)
 
 
 class App:
@@ -541,9 +567,9 @@ class App:
             player=Player(board.to_pos(entrance), 9000),
             enemies=enemies,
         )
-        # self.state.player.flags.add("teleport")
-        # self.state.player.flags.add("wand")
-        # self.state.player.flags.add("thunder")
+        self.state.player.flags.add("teleport")
+        self.state.player.flags.add("wand")
+        self.state.player.flags.add("thunder")
 
         self._draw = partial(draw, self.state)
         self._draw_debug = partial(debug.draw_debug, self.state)
