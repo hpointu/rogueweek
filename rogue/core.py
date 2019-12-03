@@ -179,41 +179,6 @@ class Actor:
             self.end_turn()
 
 
-class Player(Actor):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.keys = 0
-        self._base_sprite = self.sprite
-        self._teleport_sprite = AnimSprite(*ANIMATED[9010])
-
-    def move(self, *a, **kw):
-        super().move(*a, **kw)
-        self.sprite.play()
-
-    def teleport(self, *a, **kw):
-        self.sprite = self._teleport_sprite
-        self.move(*a, **kw)
-
-    def wait(self, *a, **kw):
-        super().wait(*a, **kw)
-        self.sprite.play()
-
-    def attack(self, *a, **kw):
-        r = super().attack(*a, **kw)
-        self.sprite.play()
-        return r
-
-    def thunder(self, state, e1, e2):
-        from rogue.particles import Thunder
-        state.particles.append(Thunder(state, e1.square, e2.square))
-        state.particles.append(Thunder(state, e1.square, e2.square))
-
-    def end_turn(self):
-        super().end_turn()
-        self.sprite.stop()
-        self.sprite = self._base_sprite
-
-
 class AIActor(Actor):
     def take_action(self, state: State, end_turn) -> ActionReport:
         end_turn(self)

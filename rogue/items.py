@@ -1,6 +1,7 @@
 import pyxel
 from functools import partial
-from rogue.core import LevelItem, State, Player
+from rogue.core import LevelItem, State
+from rogue.player import Player
 from rogue.misc import TextBox
 
 

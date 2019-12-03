@@ -231,7 +231,8 @@ class Pixel(Particle):
 class Thunder(Particle):
     _cpt = 30
 
-    def __init__(self, state: State, start, target):
+    def __init__(self, state: State, start, target, callback):
+        self.callback = callback
         start = state.to_pixel(_center(start), CELL_SIZE)
         target = state.to_pixel(_center(target), CELL_SIZE)
         points = rwalk(start, target)
@@ -241,7 +242,6 @@ class Thunder(Particle):
             path += line(start, p)
             start = p
         self._path = path
-        self._points = []
 
     def update(self, state):
         self._cpt -= 1
@@ -252,10 +252,10 @@ class Thunder(Particle):
                 )
 
         if not self._path:
-            pass
+            self.callback(8)
 
     def draw(self, state):
         pass
 
     def living(self):
-        return self._cpt > 0
+        return bool(self._path)

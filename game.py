@@ -9,9 +9,11 @@ from rogue import misc
 from rogue.actions import end_turn, open_door, unlock_door
 
 from rogue.core import ITEMS, LevelItem, Tool, MenuItem
-from rogue.core import Board, State, Player, VecF
+from rogue.core import Board, State, VecF
 from rogue.core import dist, index_to_pos, cast_ray
 from rogue.core import is_empty, is_wall, is_door, is_locked, is_hole
+
+from rogue.player import Player
 
 from rogue.dungeon_gen import (
     generate_level,
@@ -20,7 +22,7 @@ from rogue.dungeon_gen import (
     room_anchor,
 )
 
-from rogue.particles import DamageText, Projectile, Molecule, Aura, Thunder
+from rogue.particles import DamageText, Projectile, Molecule, Aura
 
 from rogue.constants import CELL_SIZE, FPS, TPV
 from rogue.sprites import WALLS
@@ -247,7 +249,7 @@ def player_action(state: State):
             return dist(e.square, state.player.square)
 
         e = sorted(state.enemies, key=_dist_to_player)[0]
-        state.player.thunder(state, state.player, e)
+        state.player.thunder(state, state.player, e, _end)
 
     if state.menu_index is not None:
         return update_menu(state)
