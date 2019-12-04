@@ -24,15 +24,17 @@ less constraints, it's still a lot of fun.
 - [ ] traps / fire
 
 ## Content
-- [X] randomly moving enemies
-- [X] player following enemies
-- [X] distance shooting enemies
-- [ ] final boss
+- [X] randomly moving enemies: Bat, Slug
+- [X] player following enemies: Skel, Ghost
+- [X] distance shooting enemies: Plant
+- [ ] insensitive to Melee atacks: Ghost
+- [ ] final boss: Necromancer (raising skels)
 - [ ] healing items
 - [ ] magic door (requires The Book)
+- [X] show map
 
 ## Player skills:
-- [X] melee attack
-- [X] distance attack
+- [X] melee attack (3) (or 2 if cooldown on distance)
+- [X] distance attack (2) (possibly 1 turn of cooldown)
 - [X] teleport
-- [ ] thunder storm
+- [ ] thunder storm (1)

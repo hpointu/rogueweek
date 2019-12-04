@@ -237,6 +237,7 @@ class State:
     menu_index: Optional[int] = None
     active_tool: Optional[Tool] = None
     text_box: Optional[Any] = None
+    visited: Set[GridCoord] = field(default_factory=set)
 
     def to_cam_space(self, pos: Tuple[float, float]):
         px, py = pos

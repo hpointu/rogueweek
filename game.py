@@ -235,6 +235,24 @@ class ThunderTool:
         pass
 
 
+class Map:
+    def update(self, state, end_fn):
+        if pyxel.btnr(pyxel.KEY_X) or pyxel.btnr(pyxel.KEY_C):
+            state.active_tool = None
+
+    def draw(self, state):
+        offx, offy = 48, 48
+        pyxel.rect(offx - 2, offy - 2, 36, 36, 5)
+        for x, y in state.visited:
+            col = 7
+            v = state.board.get(x, y)
+            if is_door(v):
+                col = 4
+            elif is_wall(v):
+                col = 1
+            pyxel.pix(offx + x, offy + y, col)
+
+
 def menu(state) -> List[MenuItem]:
     m = []
 
@@ -247,6 +265,8 @@ def menu(state) -> List[MenuItem]:
         m.append(("Teleport", partial(set_tool, Teleport(state))))
     if "thunder" in state.player.flags:
         m.append(("Thunder", partial(set_tool, ThunderTool())))
+
+    m.append(("Show Map", partial(set_tool, Map())))
     return m + [("Exit", lambda x: print("exit game"))]
 
 
@@ -431,6 +451,7 @@ def update(state: State) -> State:
         state.visible.update(trav)
         if not state.board.outside(*hit):
             state.visible.add(hit)
+    state.visited |= state.visible
 
     return state
 
