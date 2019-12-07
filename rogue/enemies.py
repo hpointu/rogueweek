@@ -15,19 +15,23 @@ def can_walk(board: Board, x, y) -> bool:
 
 def straight_line(state: State, e: AIActor, end_turn) -> ActionReport:
     possible = [
-        n for n in state.board.neighbours(*e.pos) if can_walk(state.board, *n)
+        n
+        for n in state.board.neighbours(*e.pos)
+        if can_walk(state.board, *n) and n not in state.occupied
     ]
-    if e.square in state.visible:
+    if e.square in state.visible and possible:
         possible = sorted(possible, key=lambda x: dist(x, state.player.square))
         if possible[0] == state.player.square:
             return e.attack(state.player, end_turn)
         else:
             x, y = possible[0]
             e.move(x, y, end_turn)
+            return x, y
     else:
         if possible:
             x, y = random.choice(possible)
             e.move(x, y, end_turn, 1)
+            return x, y
         else:
             e.wait(10, end_turn)
     return None
@@ -35,7 +39,9 @@ def straight_line(state: State, e: AIActor, end_turn) -> ActionReport:
 
 def random_move(state: State, e: AIActor, end_turn) -> ActionReport:
     possible = [
-        n for n in state.board.neighbours(*e.pos) if can_walk(state.board, *n)
+        n
+        for n in state.board.neighbours(*e.pos)
+        if can_walk(state.board, *n) and n not in state.occupied
     ]
 
     speed = int(0.3 * FPS) if e.square in state.visible else 1
@@ -49,7 +55,7 @@ def random_move(state: State, e: AIActor, end_turn) -> ActionReport:
     x, y = random.choice(possible)
     e.move(x, y, end_turn, speed)
 
-    return None
+    return x, y
 
 
 class Slug(AIActor):
@@ -115,9 +121,7 @@ class Plant(AIActor):
             self.end_turn()
 
         pyxel.play(3, 56)
-        state.particles.append(
-            Projectile(self.pos, target.pos, apply_damage)
-        )
+        state.particles.append(Projectile(self.pos, target.pos, apply_damage))
 
     def take_action(self, state: State, end_turn_fn) -> ActionReport:
         if self.square in state.visible:

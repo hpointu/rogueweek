@@ -37,4 +37,7 @@ less constraints, it's still a lot of fun.
 - [X] melee attack (3) (or 2 if cooldown on distance)
 - [X] distance attack (2) (possibly 1 turn of cooldown)
 - [X] teleport
-- [ ] thunder storm (1)
+- [X] thunder storm (1)
+
+## Bugs:
+- [ ] Plants can shoot just after dying

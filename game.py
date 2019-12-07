@@ -9,16 +9,25 @@ from rogue import misc
 from rogue.actions import end_turn, open_door, unlock_door
 
 from rogue.core import ITEMS, LevelItem, Tool, MenuItem
-from rogue.core import Board, State, VecF
+from rogue.core import Board, State, VecF, GridCoord
 from rogue.core import dist, index_to_pos, cast_ray
-from rogue.core import is_empty, is_wall, is_door, is_locked, is_hole
+from rogue.core import (
+    is_empty,
+    is_wall,
+    is_door,
+    is_locked,
+    is_hole,
+    is_active_tile,
+)
 
 from rogue.player import Player
 
 from rogue.dungeon_gen import (
     generate_level,
     populate_enemies,
-    basic_scenario,
+    level_1,
+    level_2,
+    level_3,
     room_anchor,
 )
 
@@ -242,14 +251,18 @@ class Map:
 
     def draw(self, state):
         offx, offy = 48, 48
+        pyxel.rect(offx - 5, offy - 5, 42, 42, 7)
+        pyxel.rect(offx - 4, offy - 4, 40, 40, 0)
         pyxel.rect(offx - 2, offy - 2, 36, 36, 5)
         for x, y in state.visited:
             col = 7
             v = state.board.get(x, y)
             if is_door(v):
-                col = 4
+                col = 8 if is_locked(v) else 4
             elif is_wall(v):
                 col = 1
+            elif is_active_tile(v):
+                col = 12
             pyxel.pix(offx + x, offy + y, col)
 
 
@@ -326,7 +339,19 @@ def player_action(state: State):
         item.interact(state)
         state.player.wait(FPS * 0.3, _end)
     elif can_walk(state.board, *target):
-        state.player.move(*target, _end)
+
+        def _change_level(val, caller):
+            if val == 66:
+                state.change_level(-1)
+            elif val == 99:
+                state.change_level(1)
+            return _end(caller)
+
+        if is_active_tile(val):
+            state.player.move(*target, partial(_change_level, val))
+        else:
+            state.player.move(*target, _end)
+
     elif is_door(val):
         if is_locked(state.board.get(*target)):
             if state.player.keys:
@@ -359,12 +384,18 @@ def game_turn(state: State):
     if any(e.is_busy() for e in state.enemies):
         return
     _end = end_turn(state, len(state.enemies))
+    if not state.enemies:
+        _end(None)
+    state.occupied = set()
     for e in state.enemies:
-        # Only damage report, so far. Might add more reporting
+        # report is either None, or a Pos or a Damage
         report = e.take_action(state, _end)
-        if report is not None:
+        if isinstance(report, int):
             pyxel.play(3, 51)
             draw_damage(state, state.player.pos, report, 8)
+        elif report is not None:
+            # then they moved
+            state.occupied.add(report)
 
 
 def update(state: State) -> State:
@@ -479,6 +510,8 @@ def draw(state: State):
         26: (72, 16),
         27: (72, 8),
         28: (72, 0),
+        66: (64, 16),  # UP
+        99: (64, 24),  # DOWN
     }
 
     # draw in range
@@ -574,20 +607,23 @@ class App:
     _debug: bool = False
 
     def __init__(self):
-        level, board = basic_scenario(*generate_level())
-        enemies = populate_enemies(level, board)
-
-        # entrance = board.to_index(*room_anchor(level.final_rooms[0]))
-        entrance = board.entrance
-        # entrance = board.to_index(*room_anchor(level.final_rooms[1]))
+        levels = [
+            level_1(),
+            level_2(),
+            level_3(),
+        ]
+        # level = populate_enemies(level)
 
         self.state = State(
-            level=level,
-            board=board,
+            levels=levels,
+            current_level=-1,
             camera=(0, 0),
-            player=Player(board.to_pos(entrance), 9000),
-            enemies=enemies,
+            player=Player((0, 0), 9000),
         )
+        self.state.visited_by_floor = [
+            set() for _ in range(len(self.state.levels))
+        ]
+        self.state.change_level(1)
         self.state.player.flags.add("teleport")
         self.state.player.flags.add("wand")
         self.state.player.flags.add("thunder")
@@ -601,7 +637,7 @@ class App:
     def run(self):
         pyxel.init(128, 128)
         pyxel.load("my_resource.pyxres")
-        pyxel.playm(0, loop=True)
+        # pyxel.playm(0, loop=True)
         pyxel.run(self.update, self.draw)
 
     def update(self):

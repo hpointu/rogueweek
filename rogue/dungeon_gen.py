@@ -358,7 +358,7 @@ def amend_door(board: Board, room_index: int, door_fn) -> Board:
     return board
 
 
-def generate_level() -> Tuple[Level, Board]:
+def generate_level() -> Level:
     final_rooms: List[int] = []
 
     while len(final_rooms) < 3:
@@ -373,12 +373,16 @@ def generate_level() -> Tuple[Level, Board]:
     level.start_room = pick_starting_room(level)
     board = create_board(level)
 
-    board.entrance = board.to_index(*room_anchor(level.start_room))
+    (w, h), _ = level.rooms[level.start_room]
+    x, y = room_anchor(level.start_room)
+    board.entrance = board.to_index(x + int(w/2), y + int(h/2))
 
-    return level, board
+    level.board = board
+    return level
 
 
-def populate_enemies(level: Level, board: Board):
+def populate_enemies(level: Level):
+    board = level.board
     enemies = []
     for i in range(len(board)):
         if not is_empty(board[i]):
@@ -392,7 +396,8 @@ def populate_enemies(level: Level, board: Board):
             e.sprite.play()
             enemies.append(e)
 
-    return enemies
+    level.enemies = enemies
+    return level
 
 
 def square_from_room(level: Level, room_index):
@@ -402,8 +407,18 @@ def square_from_room(level: Level, room_index):
     return ox + x, oy + y
 
 
-def basic_scenario(level: Level, board: Board) -> Tuple[Level, Board]:
-    board = amend_door(board, level.final_rooms[0], dig_door)
+def set_exit(level):
+    final_rooms = level.final_rooms
+    (w, h), _ = level.rooms[final_rooms[0]]
+    x, y = room_anchor(final_rooms[0])
+    level.board.set(x + int(w/2), y + int(h/2), 99)
+
+    return level
+
+
+def level_1() -> Level:
+    level = generate_level()
+    board = amend_door(level.board, level.final_rooms[0], dig_door)
     for r in level.final_rooms[1:]:
         board = amend_door(board, r, lock_door)
 
@@ -432,4 +447,22 @@ def basic_scenario(level: Level, board: Board) -> Tuple[Level, Board]:
         Chest(TELEPORT_SPELL, square=square_from_room(level, final_rooms[2]))
     )
 
-    return level, board
+    level = set_exit(level)
+    return level
+
+
+def level_2() -> Level:
+    level = generate_level()
+
+    level.board[level.board.entrance] = 66
+    set_exit(level)
+
+    return level
+
+
+def level_3() -> Level:
+    level = generate_level()
+
+    level.board[level.board.entrance] = 66
+
+    return level

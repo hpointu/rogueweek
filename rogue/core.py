@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from math import sqrt
-from typing import List, Tuple, Any, Set, Optional, Callable
+from typing import List, Tuple, Any, Set, Optional, Callable, Union
 
 from rogue import tween
 
@@ -45,7 +45,8 @@ Size = Tuple[int, int]
 Position = Tuple[int, int]
 Room = Tuple[Size, Position]
 
-ActionReport = Optional[int]
+Action = Union[int, GridCoord]
+ActionReport = Optional[Action]
 
 
 @dataclass
@@ -67,6 +68,8 @@ class Level:
     start_room: int = 0
     final_rooms: List[int] = field(default_factory=list)
     items: List[LevelItem] = field(default_factory=list)
+    board: Optional[Board] = None
+    enemies: List[AIActor] = field(default_factory=list)
 
 
 @dataclass
@@ -226,10 +229,9 @@ class Tool:
 class State:
     max_range = 5
     player: Actor
-    level: Level
-    board: Board
+    levels: List[Level]
+    current_level: int
     camera: Tuple[float, float]
-    enemies: List[AIActor] = field(default_factory=list)
     in_range: Set[Any] = field(default_factory=set)
     visible: Set[GridCoord] = field(default_factory=set)
     particles: List[Particle] = field(default_factory=list)
@@ -237,7 +239,8 @@ class State:
     menu_index: Optional[int] = None
     active_tool: Optional[Tool] = None
     text_box: Optional[Any] = None
-    visited: Set[GridCoord] = field(default_factory=set)
+    visited_by_floor: Set[GridCoord] = field(default_factory=list)
+    occupied: Set[GridCoord] = field(default_factory=set)
 
     def to_cam_space(self, pos: Tuple[float, float]):
         px, py = pos
@@ -247,6 +250,35 @@ class State:
     def to_pixel(self, pos: Tuple[float, float], tile_size):
         return tuple(int(c * tile_size) for c in self.to_cam_space(pos))
 
+    @property
+    def level(self):
+        return self.levels[self.current_level]
+
+    @property
+    def board(self):
+        return self.level.board
+
+    @property
+    def enemies(self):
+        return self.level.enemies
+
+    @property
+    def visited(self):
+        return self.visited_by_floor[self.current_level]
+
+    @visited.setter
+    def visited(self, val):
+        self.visited_by_floor[self.current_level] = val
+
+    def change_level(self, offset):
+        self.current_level += offset
+        if offset > 0:
+            self.player.pos = self.board.to_pos(self.board.entrance)
+        elif offset < 0:
+            for i in range(len(self.board)):
+                if self.board[i] == 99:
+                    break
+            self.player.pos = self.board.to_pos(i)
 
 MenuItem = Tuple[str, Callable[[State], None]]
 
@@ -275,7 +307,11 @@ def is_locked(val: int) -> bool:
 
 
 def is_empty(val: int) -> bool:
-    return val == 0 or 30 <= val < 40
+    return val == 0 or 30 <= val < 40 or val == 99 or val == 66
+
+
+def is_active_tile(val) -> bool:
+    return val in {66, 99}
 
 
 def is_hole(val: int) -> bool:
@@ -328,8 +364,8 @@ def line(a, b):
     else:
         if ay > by:
             return line(b, a)
-        # if dx == 0:
-        #     return [(ax, y) for y in range(ay, by)]
+        if dy == 0:
+            return [(x, dy) for x in range(ax, bx)]
         x = ax
         derr = abs(dx / dy)
         for y in range(ay, by):
