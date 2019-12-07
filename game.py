@@ -264,6 +264,8 @@ class Map:
             elif is_active_tile(v):
                 col = 12
             pyxel.pix(offx + x, offy + y, col)
+        x, y = state.player.pos
+        pyxel.pix(offx + x, offy + y, 11)
 
 
 def menu(state) -> List[MenuItem]:
@@ -272,6 +274,8 @@ def menu(state) -> List[MenuItem]:
     def set_tool(t, s):
         s.active_tool = t
 
+    m.append(("Show Map", partial(set_tool, Map())))
+
     if "wand" in state.player.flags:
         m.append(("Shoot", partial(set_tool, Wand(state))))
     if "teleport" in state.player.flags:
@@ -279,7 +283,6 @@ def menu(state) -> List[MenuItem]:
     if "thunder" in state.player.flags:
         m.append(("Thunder", partial(set_tool, ThunderTool())))
 
-    m.append(("Show Map", partial(set_tool, Map())))
     return m + [("Exit", lambda x: print("exit game"))]
 
 
@@ -582,7 +585,7 @@ def draw(state: State):
 
     for i, flag in enumerate(["wand", "teleport", "thunder"]):
         if flag in state.player.flags:
-            pyxel.blt(3 + i * 8, 20, 0, *ITEMS[flag])
+            pyxel.blt(117 - i * 8, 2, 0, *ITEMS[flag])
 
     # MENU
     menu_ = menu(state)
@@ -607,6 +610,7 @@ class App:
     _debug: bool = False
 
     def __init__(self):
+        self._title = True
         levels = [
             level_1(),
             level_2(),
@@ -624,9 +628,9 @@ class App:
             set() for _ in range(len(self.state.levels))
         ]
         self.state.change_level(1)
-        self.state.player.flags.add("teleport")
-        self.state.player.flags.add("wand")
-        self.state.player.flags.add("thunder")
+        #self.state.player.flags.add("teleport")
+        #self.state.player.flags.add("wand")
+        #self.state.player.flags.add("thunder")
 
         self._draw = partial(draw, self.state)
         self._draw_debug = partial(debug.draw_debug, self.state)
@@ -637,10 +641,17 @@ class App:
     def run(self):
         pyxel.init(128, 128)
         pyxel.load("my_resource.pyxres")
-        # pyxel.playm(0, loop=True)
+        pyxel.playm(2, loop=True)
         pyxel.run(self.update, self.draw)
 
     def update(self):
+        if self._title:
+            if pyxel.btnr(pyxel.KEY_C) or pyxel.btnr(pyxel.KEY_X):
+                self._title = False
+                pyxel.stop()
+                pyxel.playm(0, loop=True)
+            return
+
         if pyxel.btnr(pyxel.KEY_D):
             self._debug = not self._debug
 
@@ -650,10 +661,19 @@ class App:
             self._update()
 
     def draw(self):
+        if self._title:
+            self.draw_title()
+            return
+
         if self._debug:
             self._draw_debug()
         else:
             self._draw()
+
+    def draw_title(self):
+        pyxel.cls(0)
+        if (pyxel.frame_count // 15) % 2 == 0:
+            pyxel.text(30, 110, "Press C to start", 7)
 
 
 def main():
