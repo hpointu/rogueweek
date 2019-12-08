@@ -249,7 +249,6 @@ class Plant(Shooter):
 
     def take_action(self, state: State, end_turn_fn) -> ActionReport:
         if self.square in state.visible:
-            print("shoot")
             self.shoot(state, state.player, end_turn_fn)
             return
 

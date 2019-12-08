@@ -708,8 +708,10 @@ class App:
         for p in self.particles:
             p.draw(self.state)
 
+        pyxel.text(40, 3, "The Book of", 2)
         pyxel.blt(40, 10, 2, 0, 94, 48, 122)
         pyxel.blt(88, 20, 0, 88, 0, 8, 8, 1)
+        # pyxel.blt(88, 20, 0, 96, 0, 8, 8, 1)
 
         self.story.draw()
         pyxel.rect(0, 100, 128, 50, 0)
