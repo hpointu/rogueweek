@@ -181,7 +181,7 @@ class Necromancer(Shooter):
             self.met_already = True
 
         skels = [e for e in state.enemies if e.parent == self]
-        can_invoke = not skels and not self.cooldown_spawn
+        can_invoke = not skels and self.cooldown_spawn < 1
 
         if not skels:
             self.sprite.stop()
@@ -212,7 +212,7 @@ class Necromancer(Shooter):
                 16, partial(self._do_spawn, state, end=end_turn_fn)
             )
 
-        elif not self.cooldown_shoot:
+        elif self.cooldown_shoot < 1:
             self.cooldown_shoot = 2
             return self.shoot(state, state.player, end_turn_fn)
 

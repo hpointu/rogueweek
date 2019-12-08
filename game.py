@@ -676,6 +676,8 @@ class App:
             for p in clear:
                 self.particles.remove(p)
 
+            return
+
         if pyxel.btnr(pyxel.KEY_D):
             self._debug = not self._debug
 

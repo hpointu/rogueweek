@@ -72,8 +72,9 @@ class Player(Actor):
                 for e in state.enemies
                 if dist(e.pos, e2.pos) < 3 and e not in touched
             ]
+            nt = touched | set(e for e in near)
             for n in near:
-                self.thunder(state, e2, n, end_fn, touched | {n})
+                self.thunder(state, e2, n, end_fn, nt)
 
             if not near:
                 self.wait(delay, end_fn)

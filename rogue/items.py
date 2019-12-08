@@ -31,6 +31,8 @@ def _add_flag(flag: str, state: State) -> State:
 ADD_KEY = _add_key
 TELEPORT_SPELL = partial(_add_flag, "teleport")
 MAGIC_WAND = partial(_add_flag, "wand")
+ARMOR = partial(_add_flag, "armor")
+THUNDER = partial(_add_flag, "thunder")
 
 
 class Chest(LevelItem):

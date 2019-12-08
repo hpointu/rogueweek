@@ -382,18 +382,22 @@ def generate_level() -> Level:
     return level
 
 
-def populate_enemies(level: Level):
+def populate_enemies(level: Level, stock, empty):
     board = level.board
     enemies = []
     for i in range(len(board)):
         if not is_empty(board[i]):
             continue
 
-        r = random.randint(0, 100)
+        if any(index_in_room(level, r, i) for r in level.final_rooms):
+            continue
 
-        if r > 94:
-            enemy_cls = random.choice([Necromancer, Ghost, Skeleton, Slug, Plant, Bat])
-            enemy_cls = random.choice([Plant])
+        # if any(board.to_index(i.square) for i in level.items):
+        #     pass
+
+        r = random.randint(0, 100)
+        if r >= empty:
+            enemy_cls = random.choice(stock)
             e = enemy_cls(index_to_pos(i, board.side))
             e.sprite.play()
             enemies.append(e)
@@ -415,6 +419,13 @@ def set_exit(level):
     level.board.set(x + int(w/2), y + int(h/2), 99)
 
     return level
+
+
+def index_in_room(level, room, index):
+    rx, ry = room_anchor(room)
+    (w, h), _ = level.rooms[room]
+    x, y = level.board.to_pos(index)
+    return x >= rx and x < rx + w and y >= ry and y < ry + h
 
 
 def level_1() -> Level:
@@ -448,6 +459,9 @@ def level_1() -> Level:
         Chest(TELEPORT_SPELL, square=square_from_room(level, final_rooms[2]))
     )
 
+    stock = [Bat] * 2 + [Slug]
+    level.enemies = populate_enemies(level, stock, empty=95)
+
     level = set_exit(level)
     return level
 
@@ -457,6 +471,9 @@ def level_2() -> Level:
 
     level.board[level.board.entrance] = 66
     set_exit(level)
+
+    stock = [Skeleton] * 3 + [Bat] * 3 + [Plant] + [Slug] * 4
+    level.enemies = populate_enemies(level, stock, empty=95)
 
     return level
 
@@ -468,9 +485,10 @@ def level_3() -> Level:
     boss_room = level.final_rooms[0]
     (w, h), _ = level.rooms[boss_room]
     x, y = room_anchor(boss_room)
-    level.board.entrance = level.board.to_index(x, y)
     boss = Necromancer((int(x + w/2), int(y + h/2)), boss_room)
+
+    stock = [Skeleton] * 3 + [Bat] * 3 + [Plant] + [Slug] * 4
+    level.enemies = populate_enemies(level, stock, empty=96)
     level.enemies.append(boss)
-    # level.enemies = populate_enemies(level)
 
     return level
