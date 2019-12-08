@@ -1,7 +1,16 @@
 from functools import partial
 import random
 from typing import List, Tuple
-from rogue.items import Chest, ADD_KEY, MAGIC_WAND, TELEPORT_SPELL
+from rogue.items import (
+    Chest,
+    ADD_KEY,
+    MAGIC_WAND,
+    TELEPORT_SPELL,
+    ARMOR,
+    THUNDER,
+    TRI_A,
+    TRI_B,
+)
 from rogue.graph import (
     neighbours_map,
     find_paths,
@@ -14,6 +23,7 @@ from rogue.core import (
     is_empty,
     is_locked,
     is_wall,
+    is_active_tile,
 )
 from rogue.core import (
     index_to_pos,
@@ -376,7 +386,7 @@ def generate_level() -> Level:
 
     (w, h), _ = level.rooms[level.start_room]
     x, y = room_anchor(level.start_room)
-    board.entrance = board.to_index(x + int(w/2), y + int(h/2))
+    board.entrance = board.to_index(x + int(w / 2), y + int(h / 2))
 
     level.board = board
     return level
@@ -392,8 +402,11 @@ def populate_enemies(level: Level, stock, empty):
         if any(index_in_room(level, r, i) for r in level.final_rooms):
             continue
 
-        # if any(board.to_index(i.square) for i in level.items):
-        #     pass
+        if any(board.to_index(*k.square) == i for k in level.items):
+            continue
+
+        if is_active_tile(board[i]):
+            continue
 
         r = random.randint(0, 100)
         if r >= empty:
@@ -416,7 +429,7 @@ def set_exit(level):
     final_rooms = level.final_rooms
     (w, h), _ = level.rooms[final_rooms[0]]
     x, y = room_anchor(final_rooms[0])
-    level.board.set(x + int(w/2), y + int(h/2), 99)
+    level.board.set(x + int(w / 2), y + int(h / 2), 99)
 
     return level
 
@@ -428,12 +441,7 @@ def index_in_room(level, room, index):
     return x >= rx and x < rx + w and y >= ry and y < ry + h
 
 
-def level_1() -> Level:
-    level = generate_level()
-    board = amend_door(level.board, level.final_rooms[0], dig_door)
-    for r in level.final_rooms[1:]:
-        board = amend_door(board, r, lock_door)
-
+def place_keys(level, n=2):
     rooms = random.choices(
         [
             i
@@ -442,14 +450,22 @@ def level_1() -> Level:
             and level.rooms[i][0][0] > 3
             and level.rooms[i][0][1] > 3
         ],
-        k=2,
+        k=n,
     )
-    level.items.append(
-        Chest(ADD_KEY, square=square_from_room(level, rooms[0]))
-    )
-    level.items.append(
-        Chest(ADD_KEY, square=square_from_room(level, rooms[1]))
-    )
+    for i in range(n):
+        level.items.append(
+            Chest(ADD_KEY, square=square_from_room(level, rooms[i]))
+        )
+    return level
+
+
+def level_1() -> Level:
+    level = generate_level()
+    board = amend_door(level.board, level.final_rooms[0], dig_door)
+    for r in level.final_rooms[1:]:
+        board = amend_door(board, r, lock_door)
+
+    level = place_keys(level, 2)
 
     final_rooms = level.final_rooms
     level.items.append(
@@ -469,11 +485,21 @@ def level_1() -> Level:
 def level_2() -> Level:
     level = generate_level()
 
+    level = place_keys(level, 2)
+
+    final_rooms = level.final_rooms
+    level.items.append(
+        Chest(TRI_A, square=square_from_room(level, final_rooms[1]))
+    )
+    level.items.append(
+        Chest(ARMOR, square=square_from_room(level, final_rooms[2]))
+    )
+
     level.board[level.board.entrance] = 66
     set_exit(level)
 
     stock = [Skeleton] * 3 + [Bat] * 3 + [Plant] + [Slug] * 4
-    level.enemies = populate_enemies(level, stock, empty=95)
+    level.enemies = populate_enemies(level, stock, empty=97)
 
     return level
 
@@ -481,11 +507,21 @@ def level_2() -> Level:
 def level_3() -> Level:
     level = generate_level()
 
+    level = place_keys(level, 2)
+
+    final_rooms = level.final_rooms
+    level.items.append(
+        Chest(TRI_B, square=square_from_room(level, final_rooms[1]))
+    )
+    level.items.append(
+        Chest(THUNDER, square=square_from_room(level, final_rooms[2]))
+    )
+
     level.board[level.board.entrance] = 66
     boss_room = level.final_rooms[0]
     (w, h), _ = level.rooms[boss_room]
     x, y = room_anchor(boss_room)
-    boss = Necromancer((int(x + w/2), int(y + h/2)), boss_room)
+    boss = Necromancer((int(x + w / 2), int(y + h / 2)), boss_room)
 
     stock = [Skeleton] * 3 + [Bat] * 3 + [Plant] + [Slug] * 4
     level.enemies = populate_enemies(level, stock, empty=96)

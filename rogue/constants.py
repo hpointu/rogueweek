@@ -6,6 +6,7 @@ class DType(Enum):
     MAGIC = "Magic"
     MELEE = "Melee"
 
+MAX_PV = 20
 CELL_SIZE = 8
 FPS = 30
 TPV = 16  # frames per TP

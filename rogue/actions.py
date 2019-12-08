@@ -13,8 +13,6 @@ def end_turn(state: State, n: int = 1):
         if n < 1:
             state.player_turn = not state.player_turn
             g = "player" if state.player_turn else "game"
-            print("----")
-            print(f"{g} turn")
         return state
 
     return _do

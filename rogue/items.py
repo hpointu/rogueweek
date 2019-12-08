@@ -1,5 +1,6 @@
 import pyxel
 from functools import partial
+from rogue.constants import MAX_PV
 from rogue.core import LevelItem, State
 from rogue.player import Player
 from rogue.misc import TextBox
@@ -15,8 +16,13 @@ def _add_key(state: State) -> State:
 
 
 FLAGS_TEXT_BOX = {
-    "teleport": "You can now teleport!",
-    "wand": "You can shoot at enemies!",
+    "teleport": "This scrolls seems to teach how to travel... Through... What?",
+    "wand": "What is that stick? What if you point it to someone's direction?",
+    "thunder": "You're full of electricity!",
+    "armor": "Wow! You feel like you're stronger...",
+    "triA": "You found a weird stone. It seems to be missing a part.",
+    "triB": "You found a weird stone. It seems to be missing a part.",
+    "tri": "",
 }
 
 
@@ -28,11 +34,19 @@ def _add_flag(flag: str, state: State) -> State:
     return state
 
 
+def _heal(flag: str, state: State) -> State:
+    state.player.pv = MAX_PV
+    return state
+
+
 ADD_KEY = _add_key
+VIAL = _heal
 TELEPORT_SPELL = partial(_add_flag, "teleport")
 MAGIC_WAND = partial(_add_flag, "wand")
 ARMOR = partial(_add_flag, "armor")
 THUNDER = partial(_add_flag, "thunder")
+TRI_A = partial(_add_flag, "triA")
+TRI_B = partial(_add_flag, "triB")
 
 
 class Chest(LevelItem):

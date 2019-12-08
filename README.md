@@ -28,9 +28,8 @@ less constraints, it's still a lot of fun.
 - [X] player following enemies: Skel, Ghost
 - [X] distance shooting enemies: Plant
 - [ ] insensitive to Melee atacks: Ghost
-- [ ] final boss: Necromancer (raising skels)
-- [ ] healing items
-- [ ] magic door (requires The Book)
+- [X] final boss: Necromancer (raising skels)
+- [X] healing items
 - [X] show map
 
 ## Player skills:
@@ -38,6 +37,3 @@ less constraints, it's still a lot of fun.
 - [X] distance attack (2) (possibly 1 turn of cooldown)
 - [X] teleport
 - [X] thunder storm (1)
-
-## Bugs:
-- [ ] Plants can shoot just after dying

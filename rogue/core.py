@@ -5,7 +5,7 @@ from typing import List, Tuple, Any, Set, Optional, Callable, Union
 
 from rogue import tween
 
-from rogue.constants import FPS, DType
+from rogue.constants import FPS, DType, MAX_PV
 from rogue.sprites import WALLS
 
 
@@ -42,6 +42,10 @@ ITEMS = {
     'teleport': (88, 8, 8, 8, 1),
     'armor': (88, 24, 8, 8, 1),
     'book': (88, 0, 8, 8, 1),
+    'vial': (96, 16, 8, 8, 1),
+    'triA': (96, 8, 8, 8, 1),
+    'triB': (104, 8, 8, 8, 1),
+    'tri': (96, 0, 8, 8, 1),
 }
 
 MPath = Tuple[int, int]
@@ -118,7 +122,7 @@ class Board:
 class Actor:
     parent = None
     _orient = LEFT
-    pv = 20
+    pv = MAX_PV
     strength = 2
 
     def __init__(self, pos, sprite_id):

@@ -158,8 +158,8 @@ class Wand(AimingTool):
 
     def use(self, state: State, end_fn):
         e = self.aim[0]
-        print("Shooting")
         state.player.shoot(state, e, end_fn)
+
 
 class Teleport(Tool):
     def __init__(self, state):
@@ -381,7 +381,6 @@ def player_action(state: State):
 def game_turn(state: State):
     if any(e.is_busy() for e in state.enemies):
         return
-    print("Game playing...")
     _end = end_turn(state, len(state.enemies))
     if not state.enemies:
         _end(None)
@@ -581,8 +580,12 @@ def draw(state: State):
     for i in range(state.player.keys):
         pyxel.blt(3 + i * 7, 12, 0, *ITEMS["key"])
 
-    for i, flag in enumerate(["wand", "teleport", "thunder", "armor"]):
+    for i, flag in enumerate(
+        ["wand", "teleport", "thunder", "armor", "tri", "triB", "triA"]
+    ):
         if flag in state.player.flags:
+            if flag in {"triA", "triB"} and "tri" in state.player.flags:
+                continue
             pyxel.blt(117 - i * 8, 2, 0, *ITEMS[flag])
 
     # MENU
@@ -628,11 +631,14 @@ class App:
         self.state.visited_by_floor = [
             set() for _ in range(len(self.state.levels))
         ]
-        self.state.change_level(3)
-        self.state.player.flags.add("teleport")
-        self.state.player.flags.add("wand")
-        self.state.player.flags.add("thunder")
-        self.state.player.flags.add("armor")
+        self.state.change_level(1)
+        # self.state.player.flags.add("teleport")
+        # self.state.player.flags.add("wand")
+        # self.state.player.flags.add("thunder")
+        # self.state.player.flags.add("armor")
+        # self.state.player.flags.add("triA")
+        # self.state.player.flags.add("triB")
+        # self.state.player.flags.add("tri")
 
         self._draw = partial(draw, self.state)
         self._draw_debug = partial(debug.draw_debug, self.state)
@@ -709,7 +715,6 @@ class App:
         pyxel.rect(0, 100, 128, 50, 0)
         if (pyxel.frame_count // 15) % 2 == 0:
             pyxel.text(30, 115, "Press C to start", 7)
-
 
 
 def main():
