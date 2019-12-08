@@ -10,6 +10,7 @@ from rogue.items import (
     THUNDER,
     TRI_A,
     TRI_B,
+    VIAL,
 )
 from rogue.graph import (
     neighbours_map,
@@ -441,7 +442,7 @@ def index_in_room(level, room, index):
     return x >= rx and x < rx + w and y >= ry and y < ry + h
 
 
-def place_keys(level, n=2):
+def place_minor_chest(level, effects=[ADD_KEY, ADD_KEY]):
     rooms = random.choices(
         [
             i
@@ -450,11 +451,11 @@ def place_keys(level, n=2):
             and level.rooms[i][0][0] > 3
             and level.rooms[i][0][1] > 3
         ],
-        k=n,
+        k=len(effects),
     )
-    for i in range(n):
+    for i, effect in enumerate(effects):
         level.items.append(
-            Chest(ADD_KEY, square=square_from_room(level, rooms[i]))
+            Chest(effect, square=square_from_room(level, rooms[i]))
         )
     return level
 
@@ -465,7 +466,7 @@ def level_1() -> Level:
     for r in level.final_rooms[1:]:
         board = amend_door(board, r, lock_door)
 
-    level = place_keys(level, 2)
+    level = place_minor_chest(level)
 
     final_rooms = level.final_rooms
     level.items.append(
@@ -485,7 +486,7 @@ def level_1() -> Level:
 def level_2() -> Level:
     level = generate_level()
 
-    level = place_keys(level, 2)
+    level = place_minor_chest(level)
 
     final_rooms = level.final_rooms
     level.items.append(
@@ -507,7 +508,7 @@ def level_2() -> Level:
 def level_3() -> Level:
     level = generate_level()
 
-    level = place_keys(level, 2)
+    level = place_minor_chest(level, [ADD_KEY, ADD_KEY, VIAL])
 
     final_rooms = level.final_rooms
     level.items.append(

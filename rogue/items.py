@@ -10,7 +10,9 @@ def _add_key(state: State) -> State:
     def _add(s):
         s.player.keys += 1
 
-    state.text_box = TextBox("key", "You can unlock a door!", _add)
+    state.text_box = TextBox(
+        "key", "You found a key. This could be useful.", _add
+    )
     pyxel.play(3, 52)
     return state
 
@@ -34,8 +36,15 @@ def _add_flag(flag: str, state: State) -> State:
     return state
 
 
-def _heal(flag: str, state: State) -> State:
-    state.player.pv = MAX_PV
+def _heal(state: State) -> State:
+
+    def _do(s):
+        s.player.pv = MAX_PV
+
+    state.text_box = TextBox(
+        "vial", "You feel rejuvenated!", _do
+    )
+    pyxel.play(3, 52)
     return state
 
 
