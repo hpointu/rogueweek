@@ -5,7 +5,7 @@ from typing import List, Tuple, Any, Set, Optional, Callable, Union
 
 from rogue import tween
 
-from rogue.constants import FPS
+from rogue.constants import FPS, DType
 from rogue.sprites import WALLS
 
 
@@ -13,6 +13,7 @@ GridCoord = Tuple[int, int]
 VecF = Tuple[float, float]
 
 EW, NS = 0, 1
+LEFT, RIGHT = 1, 2
 
 
 ANIMATED = {
@@ -23,6 +24,7 @@ ANIMATED = {
     9004: (2, [(0, 64), (8, 64)], (8, 16), (2, 8), 12),
     9005: (2, [(0, 80), (8, 80)], (8, 8), (0, 0), 8),
     9010: (1, [(48, 40)], (8, 8), (0, 0), 10),
+    9999: (2, [(0, 88), (8, 88)], (8, 16), (0, 8), 3),
 }
 
 ITEMS = {
@@ -111,7 +113,8 @@ class Board:
 
 
 class Actor:
-    orientation = 1
+    parent = None
+    _orient = LEFT
     pv = 20
     strength = 2
 
@@ -122,6 +125,9 @@ class Actor:
         self._callback = None
         self.sprite = AnimSprite(*ANIMATED[sprite_id])
         self.flags = set()
+
+    def hurt(self, damage, dtype=DType.MELEE):
+        self.pv -= damage
 
     @property
     def square(self) -> GridCoord:
@@ -134,6 +140,7 @@ class Actor:
     def bump_to(self, target, callback):
         path = []
         x, y = target
+        self.update_orientation(x, y)
         start = self.pos
         end = (start[0] + x) / 2, (start[1] + y) / 2
         path.extend(tween.tween(start, end, int(0.1 * FPS)))
@@ -150,13 +157,20 @@ class Actor:
 
     def attack(self, target, callback):
         self.bump_to(target.pos, callback)
-        target.pv -= 2
+        target.hurt(2)
         return 2
 
     def shoot(self, target, callback):
         pass
 
+    def update_orientation(self, x, y):
+        if x < self.pos[0]:
+            self._orient= LEFT
+        if x > self.pos[0]:
+            self._orient= RIGHT
+
     def move(self, x, y, callback, frames=int(FPS * 0.3)):
+        self.update_orientation(x, y)
         self._action = self.do_move
         self._callback = callback
         self._path = list(tween.tween(self.pos, (x, y), frames))
@@ -182,8 +196,13 @@ class Actor:
         if self._path < 1:
             self.end_turn()
 
+    @property
+    def orientation(self):
+        return 1 if self._orient == LEFT else -1
+
 
 class AIActor(Actor):
+    zindex = 0
     def take_action(self, state: State, end_turn) -> ActionReport:
         end_turn(self)
         return None
@@ -242,6 +261,19 @@ class State:
     visited_by_floor: Set[GridCoord] = field(default_factory=list)
     occupied: Set[GridCoord] = field(default_factory=set)
 
+    def get_entity(self, x, y):
+        pos = x, y
+        for e in self.enemies:
+            if e.square == pos:
+                return e
+        for i in self.level.items:
+            if i.square == pos:
+                return i
+        if  self.player.square == pos:
+            return self.player
+
+        return None
+
     def to_cam_space(self, pos: Tuple[float, float]):
         px, py = pos
         cx, cy = self.camera
@@ -261,6 +293,10 @@ class State:
     @property
     def enemies(self):
         return self.level.enemies
+
+    @enemies.setter
+    def enemies(self, val):
+        self.level.enemies = val
 
     @property
     def visited(self):

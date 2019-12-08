@@ -11,7 +11,7 @@ less constraints, it's still a lot of fun.
 ## General
 - [X] turned based gameplay
 - [X] text/dialogs/information
-- [ ] title screen / menu
+- [X] title screen / menu
 - [X] particle system
 - [ ] sound effects
 - [X] handle death :)
@@ -20,7 +20,7 @@ less constraints, it's still a lot of fun.
 ## Level features
 - [X] randomly generated levels
 - [X] sequential actions required to finish a level (key, door, boss)
-- [ ] more than one level (and stairs :) )
+- [X] more than one level (and stairs :) )
 - [ ] traps / fire
 
 ## Content

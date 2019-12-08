@@ -44,14 +44,6 @@ def draw_damage(state, pos, damage, color):
     state.particles.append(DamageText(f"-{damage}", ppos, color))
 
 
-def apply_damage(state, entity, damage, end_fn, source):
-    entity.pv -= damage
-    draw_damage(state, entity.pos, damage, 12)
-    pyxel.play(2, 50)
-    state.aim = list()
-    end_fn(source)
-
-
 def _center(pos):
     return pos[0] + 0.5, pos[1] + 0.5
 
@@ -166,10 +158,8 @@ class Wand(AimingTool):
 
     def use(self, state: State, end_fn):
         e = self.aim[0]
-        fn = partial(apply_damage, state, e, 2, end_fn)
-        state.particles.append(Projectile(state.player.pos, e.pos, fn))
-        pyxel.play(3, 56)
-
+        print("Shooting")
+        state.player.shoot(state, e, end_fn)
 
 class Teleport(Tool):
     def __init__(self, state):
@@ -386,10 +376,11 @@ def player_action(state: State):
 def game_turn(state: State):
     if any(e.is_busy() for e in state.enemies):
         return
+    print("Game playing...")
     _end = end_turn(state, len(state.enemies))
     if not state.enemies:
         _end(None)
-    state.occupied = set()
+    state.occupied = set(e.square for e in state.enemies)
     for e in state.enemies:
         # report is either None, or a Pos or a Damage
         report = e.take_action(state, _end)
@@ -403,6 +394,14 @@ def game_turn(state: State):
 
 def update(state: State) -> State:
     x, y = state.player.pos
+
+    deads_enemies = []
+    for e in state.enemies:
+        e.update(state)
+        if e.pv < 1:
+            deads_enemies.append(e)
+    for d in deads_enemies:
+        state.enemies.remove(d)
 
     if state.text_box is not None:
         state.text_box.update(state)
@@ -427,14 +426,6 @@ def update(state: State) -> State:
     cy = py - lthreshold if py - cy < lthreshold else cy
     cy = py - rthreshold if py - cy > rthreshold else cy
     state.camera = cx, cy
-
-    deads_enemies = []
-    for e in state.enemies:
-        e.update(state)
-        if e.pv < 1:
-            deads_enemies.append(e)
-    for d in deads_enemies:
-        state.enemies.remove(d)
 
     deads_particles = []
     for p in state.particles:
@@ -550,7 +541,8 @@ def draw(state: State):
         1,
     )
 
-    for enemy in state.enemies:
+    enemies = sorted(state.enemies, key=lambda e: e.zindex)
+    for enemy in enemies:
         if enemy.square not in state.visible:
             continue
         x, y = state.to_cam_space(enemy.pos)
@@ -560,7 +552,8 @@ def draw(state: State):
             y * CELL_SIZE - sp.center[1],
             0,
             *sp.uv,
-            *enemy.sprite.size,
+            enemy.sprite.size[0] * enemy.orientation,
+            enemy.sprite.size[1],
             1,
         )
 
@@ -627,10 +620,10 @@ class App:
         self.state.visited_by_floor = [
             set() for _ in range(len(self.state.levels))
         ]
-        self.state.change_level(1)
-        #self.state.player.flags.add("teleport")
-        #self.state.player.flags.add("wand")
-        #self.state.player.flags.add("thunder")
+        self.state.change_level(3)
+        self.state.player.flags.add("teleport")
+        self.state.player.flags.add("wand")
+        self.state.player.flags.add("thunder")
 
         self._draw = partial(draw, self.state)
         self._draw_debug = partial(debug.draw_debug, self.state)

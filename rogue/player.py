@@ -1,7 +1,7 @@
 import pyxel
-from rogue.core import Actor, AnimSprite, ANIMATED, dist
-from rogue.constants import CELL_SIZE
-from rogue.particles import Thunder, DamageText
+from rogue.core import Actor, AnimSprite, ANIMATED, dist, LEFT, RIGHT
+from rogue.constants import CELL_SIZE, DType
+from rogue.particles import Thunder, DamageText, Projectile
 
 
 class Player(Actor):
@@ -28,13 +28,31 @@ class Player(Actor):
         self.sprite.play()
         return r
 
+    def shoot(self, state, target, callback):
+        self._callback = callback
+
+        def apply_damage(source):
+            damage = 2
+            target.hurt(damage)
+            ppos = state.to_pixel(target.pos, CELL_SIZE)
+            state.particles.append(DamageText(f"-{damage}", ppos, 8))
+            pyxel.play(2, 50)
+            self.end_turn()
+
+        pyxel.play(3, 56)
+        state.particles.append(Projectile(self.pos, target.pos, apply_damage))
+
+    @property
+    def orientation(self):
+        return -1 if self._orient == LEFT else 1
+
     def thunder(self, state, e1, e2, end_fn, touched=None):
 
         touched = touched or {e2}
 
         def _apply_damage(source, delay):
             damage = 1
-            e2.pv -= damage
+            e2.hurt(damage, DType.THUNDER)
             ppos = state.to_pixel(e2.pos, CELL_SIZE)
             state.particles.append(DamageText(f"-{damage}", ppos, 12))
             pyxel.play(2, 50)

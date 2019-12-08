@@ -27,7 +27,7 @@ from rogue.core import (
     Position,
 )
 
-from rogue.enemies import Slug, Skeleton, Ghost, Plant, Bat
+from rogue.enemies import Slug, Skeleton, Ghost, Plant, Bat, Necromancer
 
 M_SIZE = 4
 MAX_ROOM_SIZE = 8
@@ -390,14 +390,14 @@ def populate_enemies(level: Level):
 
         r = random.randint(0, 100)
 
-        if r > 97:
-            enemy_cls = random.choice([Ghost, Skeleton, Slug, Plant, Bat])
+        if r > 94:
+            enemy_cls = random.choice([Necromancer, Ghost, Skeleton, Slug, Plant, Bat])
+            enemy_cls = random.choice([Plant])
             e = enemy_cls(index_to_pos(i, board.side))
             e.sprite.play()
             enemies.append(e)
 
-    level.enemies = enemies
-    return level
+    return enemies
 
 
 def square_from_room(level: Level, room_index):
@@ -464,5 +464,12 @@ def level_3() -> Level:
     level = generate_level()
 
     level.board[level.board.entrance] = 66
+    boss_room = level.final_rooms[0]
+    (w, h), _ = level.rooms[boss_room]
+    x, y = room_anchor(boss_room)
+    level.board.entrance = level.board.to_index(x, y)
+    boss = Necromancer((int(x + w/2), int(y + h/2)), boss_room)
+    level.enemies.append(boss)
+    # level.enemies = populate_enemies(level)
 
     return level
