@@ -4,6 +4,42 @@ from textwrap import wrap
 from rogue.core import ITEMS
 
 
+class RollingText:
+    def __init__(self, x, y, text, speed=5):
+        self.pos = x, y
+        self.speed = speed
+        self.cpt = 0
+        self.text = text
+        self.init_text()
+
+    def init_text(self):
+        size = 26
+
+        def _center(l):
+            spaces = (size - len(l)) // 2
+            return (" " * spaces) + l
+
+        lines = wrap(self.text, size)
+        lines = [_center(l) for l in lines]
+        self.lines = [""] * 4 + lines
+
+    def update(self):
+        self.cpt += 1
+        if self.cpt // self.speed  >= 8:
+            self.cpt = 0
+            if self.lines:
+                self.lines.pop(0)
+            else:
+                self.init_text()
+
+    def draw(self):
+        x, y = self.pos
+        y -= self.cpt // self.speed % 8
+        for i, l in enumerate(self.lines):
+            pyxel.text(x, y + 8*i, l, 5)
+
+
+
 class TextBox:
     def __init__(self, icon, text, close_callback=None):
         self.icon = icon

@@ -43,3 +43,12 @@ class Chest(LevelItem):
         state = self.content_fn(state)
         # I know...
         state.level.items.remove(self)
+
+
+class Book(LevelItem):
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+        self.sprite_id = "book"
+
+    def interact(self, state: State):
+        state.text_box = TextBox("book", "You found the book! Well done")

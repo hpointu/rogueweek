@@ -3,10 +3,11 @@ import random
 from functools import partial
 
 
-from rogue.constants import FPS, CELL_SIZE, TPV
+from rogue.constants import FPS, CELL_SIZE, TPV, DType
 from rogue.core import is_empty, dist, LEFT, RIGHT, ANIMATED
 from rogue.core import AIActor, ActionReport, State, Board, AnimSprite
-from rogue.particles import Projectile, DamageText, Molecule
+from rogue.particles import Projectile, DamageText, BossMolecule
+from rogue.items import Book
 
 
 def _center(pos):
@@ -124,21 +125,25 @@ class Shooter(AIActor):
 
 
 class Necromancer(Shooter):
-    pv = 15
+    pv = 16
     strength = 4
     zindex = 2
     cooldown_shoot = 2
     cooldown_spawn = 1
+    should_tp = False
     met_already = False
+    state_ref = None
 
     def __init__(self, pos, room):
         super().__init__(pos, 9999)
         self._base_sprite = self.sprite
         self._teleport_sprite = AnimSprite(*ANIMATED[9010])
+        self._invoke_sprite = AnimSprite(*ANIMATED[9888])
         self.room = room
 
     def pick_free_spot(self, state):
         from rogue.dungeon_gen import room_anchor
+
         (w, h), _ = state.level.rooms[self.room]
         ax, ay = room_anchor(self.room)
         x, y = self.pos
@@ -146,9 +151,13 @@ class Necromancer(Shooter):
         def _occupied(x, y):
             return bool(state.get_entity(x, y))
 
+        cpt = 0
         while _occupied(x, y):
             x = ax + random.randrange(0, w)
             y = ay + random.randrange(0, h)
+            cpt += 1
+            if cpt > 10:
+                print("oups, occupied")
 
         return x, y
 
@@ -157,47 +166,56 @@ class Necromancer(Shooter):
         return Skeleton(pos, self)
 
     def _do_spawn(self, state, caller, *, end):
-        self.sprite.stop()
         for _ in range(3):
             state.enemies.append(self.spawn_skel(state))
+        self.sprite = self._base_sprite
+        self.sprite.play()
         end(caller)
 
     def take_action(self, state: State, end_turn_fn) -> ActionReport:
+        self.state_ref = state
         if not self.square in state.visible:
             return self.wait(1, end_turn_fn)
         elif not self.met_already:
-            pyxel.playm(2, loop=True)
+            pyxel.playm(1, loop=True)
             self.met_already = True
 
         skels = [e for e in state.enemies if e.parent == self]
         can_invoke = not skels and not self.cooldown_spawn
-        if not skels:
-            self.cooldown_spawn -= 1
 
-        if can_invoke:
-            self.cooldown_shoot = 2
-            self.cooldown_spawn = 4
-            self.sprite.play()
-            pyxel.play(3, 3)
-            print("invoke")
-            return self.wait(16, partial(self._do_spawn, state, end=end_turn_fn))
-        # elif not self.cooldown_shoot:
-        #     self.cooldown_shoot = 2
-        #     print("shoot")
-        #     return self.shoot(state, state.player, end_turn_fn)
-        elif True:
-            pos = self.pick_free_spot(state)
-            for _ in range(50):
-                state.particles.append(
-                    Molecule(_center(self.pos), _center(pos), TPV)
-                )
-            self.sprite = self._teleport_sprite
-            print("tp")
-            return self.move(*pos, end_turn_fn, TPV)
+        if not skels:
+            self.sprite.stop()
+            self.cooldown_spawn -= 1
+        elif not self.should_tp:
+            return self.wait(1, end_turn_fn)
 
         self.cooldown_shoot -= 1
 
-        print("move")
+        if self.should_tp:
+            pos = state.player.pos
+            while dist(pos, state.player.pos) < 4:
+                pos = self.pick_free_spot(state)
+            for _ in range(50):
+                state.particles.append(
+                    BossMolecule(_center(self.pos), _center(pos), TPV)
+                )
+            self.sprite = self._teleport_sprite
+            self.should_tp = False
+            return self.move(*pos, end_turn_fn, TPV)
+
+        elif can_invoke:
+            self.cooldown_spawn = 4
+            self.sprite = self._invoke_sprite
+            self.sprite.play()
+            pyxel.play(3, 3)
+            return self.wait(
+                16, partial(self._do_spawn, state, end=end_turn_fn)
+            )
+
+        elif not self.cooldown_shoot:
+            self.cooldown_shoot = 2
+            return self.shoot(state, state.player, end_turn_fn)
+
         return random_move(state, self, end_turn_fn)
 
     @property
@@ -206,9 +224,20 @@ class Necromancer(Shooter):
 
     def end_turn(self):
         super().end_turn()
-        self.sprite.stop()
         self.sprite = self._base_sprite
 
+    def hurt(self, damage, dtype=DType.MELEE):
+        super().hurt(damage, dtype)
+        if dtype == DType.MELEE:
+            self.should_tp = True
+
+        if self.pv < 1:
+            pyxel.stop()
+            pyxel.playm(2, loop=True)
+            for e in self.state_ref.enemies:
+                if e.parent == self:
+                    e.hurt(10)
+            self.state_ref.level.items.append(Book(square=self.square))
 
 class Plant(Shooter):
     zindex = 1

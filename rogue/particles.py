@@ -148,7 +148,10 @@ class Molecule(Particle):
         self._path += list(
             tween.tween(climax, end, frames // 2, tween.EASE_IN_QUAD)
         )
-        self.color = random.choice([3, 7, 9, 15, 3])
+        self.color = self.get_color()
+
+    def get_color(self):
+        return random.choice([3, 7, 9, 15, 3])
 
     def living(self):
         return bool(self._path)
@@ -162,6 +165,11 @@ class Molecule(Particle):
 
     def draw(self, state):
         pyxel.pix(*state.to_pixel(self.pos, CELL_SIZE), self.color)
+
+
+class BossMolecule(Molecule):
+    def get_color(self):
+        return random.choice([4, 7, 6, 15, 4])
 
 
 class Aura(Particle):
@@ -231,10 +239,11 @@ class Pixel(Particle):
 class Thunder(Particle):
     _cpt = 30
 
-    def __init__(self, state: State, start, target, callback):
+    def __init__(self, state: State, start, target, callback, convert=True):
         self.callback = callback
-        start = state.to_pixel(_center(start), CELL_SIZE)
-        target = state.to_pixel(_center(target), CELL_SIZE)
+        if convert:
+            start = state.to_pixel(_center(start), CELL_SIZE)
+            target = state.to_pixel(_center(target), CELL_SIZE)
         points = rwalk(start, target)
         path = []
         for p in points:

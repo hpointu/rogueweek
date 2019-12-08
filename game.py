@@ -31,9 +31,9 @@ from rogue.dungeon_gen import (
     room_anchor,
 )
 
-from rogue.particles import DamageText, Projectile, Molecule, Aura
+from rogue.particles import DamageText, Projectile, Molecule, Aura, Thunder
 
-from rogue.constants import CELL_SIZE, FPS, TPV
+from rogue.constants import CELL_SIZE, FPS, TPV, STORY
 from rogue.sprites import WALLS
 
 from typing import List, Optional
@@ -196,7 +196,7 @@ class Teleport(Tool):
 
         px, py = state.player.pos
         d = abs(x - px) + abs(y - py)
-        if d < 4:
+        if d < 5:
             self.pos = x, y
             self.d = int(d)
 
@@ -264,16 +264,16 @@ def menu(state) -> List[MenuItem]:
     def set_tool(t, s):
         s.active_tool = t
 
-    m.append(("Show Map", partial(set_tool, Map())))
+    m.append(("map", "Show Map", partial(set_tool, Map())))
 
     if "wand" in state.player.flags:
-        m.append(("Shoot", partial(set_tool, Wand(state))))
+        m.append(("wand", "Shoot", partial(set_tool, Wand(state))))
     if "teleport" in state.player.flags:
-        m.append(("Teleport", partial(set_tool, Teleport(state))))
+        m.append(("teleport", "Teleport", partial(set_tool, Teleport(state))))
     if "thunder" in state.player.flags:
-        m.append(("Thunder", partial(set_tool, ThunderTool())))
+        m.append(("thunder", "Thunder", partial(set_tool, ThunderTool())))
 
-    return m + [("Exit", lambda x: print("exit game"))]
+    return m + [("exit", "Exit", lambda x: print("exit game"))]
 
 
 def menu_item(state):
@@ -290,14 +290,19 @@ def player_action(state: State):
 
     if state.active_tool is not None:
         return state.active_tool.update(state, _end)
+    elif pyxel.btnr(pyxel.KEY_X) and state.menu_index is not None:
+        state.menu_index = None
+        return
     elif pyxel.btnr(pyxel.KEY_C):
         if state.menu_index is None:
             state.menu_index = 0
             return
         else:
             menu_select = menu_item(state)
+            if state.player.cooldown(menu_select[0]):
+                return
             state.menu_index = None
-            return menu_select[1](state)
+            return menu_select[2](state)
 
     if state.menu_index is not None:
         return update_menu(state)
@@ -576,7 +581,7 @@ def draw(state: State):
     for i in range(state.player.keys):
         pyxel.blt(3 + i * 7, 12, 0, *ITEMS["key"])
 
-    for i, flag in enumerate(["wand", "teleport", "thunder"]):
+    for i, flag in enumerate(["wand", "teleport", "thunder", "armor"]):
         if flag in state.player.flags:
             pyxel.blt(117 - i * 8, 2, 0, *ITEMS[flag])
 
@@ -587,8 +592,9 @@ def draw(state: State):
         pyxel.rect(40, 40, 48, h, 0)
         pyxel.rectb(40, 40, 48, h, 5)
 
-        for i, (item, _) in enumerate(menu_):
-            pyxel.text(50, 43 + i * 8, item, 6)
+        for i, (code, item, _) in enumerate(menu_):
+            col = 5 if state.player.cooldown(code) else 7
+            pyxel.text(50, 43 + i * 8, item, col)
 
         pyxel.blt(41, 42 + state.menu_index * 8, 0, *ITEMS["dot"])
         pyxel.rect(17, 121, 128, 7, 0)
@@ -604,6 +610,8 @@ class App:
 
     def __init__(self):
         self._title = True
+        self.particles = []
+        self.story = misc.RollingText(12, 64, STORY)
         levels = [
             level_1(),
             level_2(),
@@ -624,6 +632,7 @@ class App:
         self.state.player.flags.add("teleport")
         self.state.player.flags.add("wand")
         self.state.player.flags.add("thunder")
+        self.state.player.flags.add("armor")
 
         self._draw = partial(draw, self.state)
         self._draw_debug = partial(debug.draw_debug, self.state)
@@ -639,11 +648,33 @@ class App:
 
     def update(self):
         if self._title:
+            self.story.update()
             if pyxel.btnr(pyxel.KEY_C) or pyxel.btnr(pyxel.KEY_X):
                 self._title = False
                 pyxel.stop()
                 pyxel.playm(0, loop=True)
-            return
+
+            m = random.randrange(1, 6)
+            m *= 30
+
+            if (pyxel.frame_count % m) == 0:
+                cb = lambda x: x
+                p1 = random.randrange(10, 20), random.randrange(10, 26)
+                p2 = random.randrange(112, 124), random.randrange(10, 26)
+
+                if random.randint(0, 2):
+                    p1, p2 = p2, p1
+
+                self.particles.append(Thunder(None, p1, p2, cb, False))
+                self.particles.append(Thunder(None, p1, p2, cb, False))
+
+            clear = []
+            for p in self.particles:
+                p.update(self)
+                if not p.living():
+                    clear.append(p)
+            for p in clear:
+                self.particles.remove(p)
 
         if pyxel.btnr(pyxel.KEY_D):
             self._debug = not self._debug
@@ -665,8 +696,18 @@ class App:
 
     def draw_title(self):
         pyxel.cls(0)
+
+        for p in self.particles:
+            p.draw(self.state)
+
+        pyxel.blt(40, 10, 2, 0, 94, 48, 122)
+        pyxel.blt(88, 20, 0, 88, 0, 8, 8, 1)
+
+        self.story.draw()
+        pyxel.rect(0, 100, 128, 50, 0)
         if (pyxel.frame_count // 15) % 2 == 0:
-            pyxel.text(30, 110, "Press C to start", 7)
+            pyxel.text(30, 115, "Press C to start", 7)
+
 
 
 def main():

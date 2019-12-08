@@ -301,7 +301,8 @@ def pick_final_rooms(level: Level) -> List[int]:
         if top_size and top_size[1] >= MAX_ROOM_SIZE:
             continue
 
-        rooms.append(i)
+        if w > 5 and h > 5:
+            rooms.append(i)
 
     return rooms
 
