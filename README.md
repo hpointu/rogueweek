@@ -18,6 +18,7 @@ Or :
 ```sh
 pip install -r requirements.txt
 python game.py
+```
 
 # Features to implement / Wishlist
 
