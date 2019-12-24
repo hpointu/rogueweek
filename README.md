@@ -5,6 +5,8 @@ Write a Rogue game, under the same type of constraints as those found in PICO-8.
 We chose to use Pyxel instead of PICO-8 because it's free. Although there are
 less constraints, it's still a lot of fun.
 
+![presentation](screenshots/combined.gif)
+
 # Run
 ```sh
 make run
