@@ -8,9 +8,16 @@ less constraints, it's still a lot of fun.
 ![presentation](screenshots/combined.gif)
 
 # Run
+
+Ubuntu :
 ```sh
 make run
 ```
+
+Or : 
+```sh
+pip install -r requirements.txt
+python game.py
 
 # Features to implement / Wishlist
 
